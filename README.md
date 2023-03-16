@@ -21,4 +21,5 @@
    ┣ res
    ┣ ...
    ```
-3. run your bot using `nb run`
+3. 运行bot `nb run`
+4. 配置并运行你的 bot 前端实现（[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 、 [mirai](https://mirai.mamoe.net/) 等）
