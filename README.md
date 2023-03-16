@@ -11,7 +11,6 @@
 ## 注：
    1. 对大部分明文数据做了极度简化的处理，在角色上修并修正后会补全
    2. 测试用资源包：[Alpha(0.1)](https://github.com/Gomacker/Anisebot/releases/tag/v0.1-alpha)
-      （稍微看一下数据👉👈）
 
 
 ## How to start
