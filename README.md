@@ -23,3 +23,6 @@
    ```
 3. 运行bot `nb run`
 4. 配置并运行你的 bot 前端实现（[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 、 [mirai](https://mirai.mamoe.net/) 等）
+   ```
+   推荐用反向ws连接 ws://127.0.0.1:8080/onebot/v11/
+   ```
