@@ -3,3 +3,4 @@ fuzzywuzzy==0.18.0
 Pillow==9.4.0
 python-Levenshtein==0.20.9
 pytz==2022.7
+zhconv==1.4.3
