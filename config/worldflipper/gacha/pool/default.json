@@ -1,0 +1,20 @@
+{
+  "type": "unit",
+  "up5_prob_single": 0.015,
+  "up4_prob_single": 0.025,
+  "up3_prob_single": 0.035,
+  "star5_prob": 0.05,
+  "star4_prob": 0.25,
+  "star5_up": [10],
+  "star4_up": [],
+  "star3_up": [],
+  "star5": [
+    1
+  ],
+  "star4": [
+    1
+  ],
+  "star3": [
+    1
+  ]
+}

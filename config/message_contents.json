@@ -1,0 +1,11 @@
+{
+  "worldflipper.query.success": "查到了以下内容",
+  "worldflipper.query.failed": "没有查到相关内容……",
+  "worldflipper.query.guess": "没有查到相关内容……\n是不是在找{guess_content}\n",
+  "worldflipper.query.whois.failed": "没有找到这个角色",
+  "worldflipper.gacha.gacha_1": "_单抽结果：",
+  "worldflipper.gacha.gacha_10": "_十连结果：",
+  "worldflipper.gacha.gacha_all": "_抽干结果：",
+  "worldflipper.gacha.gacha_less": "这是今天最后的{count_less}抽：",
+  "worldflipper.gacha.gacha_failed": "今天已经抽干了，明天再来吧"
+}
