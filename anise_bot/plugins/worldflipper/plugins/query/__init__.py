@@ -42,7 +42,7 @@ async def write_query_statistic(text):
     query_log_path.write_text(json.dumps(query_log, ensure_ascii=False, indent=2), 'utf-8')
 
 
-@sv.on_prefix(('tqr', 't查询', 't搜索'))
+@sv.on_prefix(('qr', '查询', '搜索'))
 async def _(bot: Bot, e: GroupMessageEvent):
     await wfm.statistic.add('query.count')
     text = e.get_message().extract_plain_text().strip()
