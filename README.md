@@ -15,7 +15,7 @@
 
 ## How to start
 
-1. 安装依赖 `requirements.txt`
+1. 安装依赖 `安装依赖.bat`
 2. 将准备好的资源包(res与data)解压在根目录
    ```
    Anisebot
@@ -26,7 +26,7 @@
    ┣ res
    ┣ ...
    ```
-3. 运行bot `nb run`
+3. 运行bot `runbot.bat`
 4. 配置并运行你的 bot 前端实现（[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 、 [mirai](https://mirai.mamoe.net/) 等）
    ```
    推荐用反向ws连接 ws://127.0.0.1:8080/onebot/v11/
