@@ -1,7 +1,7 @@
 import base64
 import hashlib
 import io
-from typing import Literal
+from typing import Literal, Union
 
 from anise_core.worldflipper.utils.wikipage import WikiPageGenerator
 from ..manager import get_source_id
@@ -71,7 +71,7 @@ def make_simple_gif_to_byte(img: Image.Image, text: str = 'Copyright Cygames, In
     return buf
 
 
-async def search_wfo(text: str, e, main_source: str = None, strict=False) -> tuple[Message | MessageSegment | None, dict]:
+async def search_wfo(text: str, e, main_source: str = None, strict=False) -> tuple[Union[Message, MessageSegment, None], dict]:
     """角色武器通用 资源查找"""
     params = text.split()
     res_group = None
@@ -192,7 +192,7 @@ async def read_query_set(query_set: dict, text: str, e: Event) -> Message:
     return result
 
 
-async def query(text: str, e: Event) -> Message | None:
+async def query(text: str, e: Event) -> Union[Message, None]:
     for i, qs in query_manager.query_map.items():
         for q in qs:
             if ('regex' in q and re.findall(q['regex'], text)) or 'regex' not in q:
@@ -202,7 +202,11 @@ async def query(text: str, e: Event) -> Message | None:
     return Service.get_send_content('worldflipper.query.failed')
 
 
-def get_target(text: str, main_source: str = None, strict: bool = False) -> tuple[Unit | Armament | WorldflipperObject | None, int, str]:
+def get_target(
+        text: str,
+        main_source: str = None,
+        strict: bool = False
+) -> tuple[Union[Unit, Armament, WorldflipperObject, None], int, str]:
     target: None = None
     guess_content = ''
     score = 100
