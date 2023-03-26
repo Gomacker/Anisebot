@@ -16,8 +16,9 @@ from .....utils import pic2b64, FreqLimiter, DailyCountLimiter
 
 sv = Service('worldflipper.gacha')
 
-_group_pool: defaultdict = defaultdict()
 daily_max: int = 0
+
+_group_pool = dict()
 
 
 def dump_pool_config():
@@ -36,7 +37,7 @@ with open(GACHA_POOL_CONFIG, 'r', encoding='utf-8') as f:
         data['group_pool'] = {}
     if 'daily_limit' not in data:
         data['daily_limit'] = 3000
-    _group_pool = data['group_pool']
+    _group_pool = {int(k): v for k, v in data['group_pool'].items()}
     jewel_lmt = DailyCountLimiter('gacha_jewel', data['daily_limit'])
     dump_pool_config()
     # _group_pool = json.loads(GACHA_POOL_CONFIG.read_text('utf-8'))
