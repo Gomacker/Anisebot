@@ -8,7 +8,6 @@ import os.path
 from pathlib import Path
 
 from anise_core.statistic import StatisticManager
-from anise_core.worldflipper.party import *
 from anise_core.worldflipper.object import *
 from anise_core.worldflipper.roster import Roster, NicknameMaster, NicknameMasterOrigin
 
