@@ -80,6 +80,15 @@ def get_entries(qly: bool, info):
         entry_['timeEnd'] = entry_['timeEnd'] / 1000
         entry_['edit'] = entry_['edit'] / 1000
 
+        if 'timeEnd' not in entry_:
+            progress_ = 0
+            progress_ = (entry_['edit'] - time.time()) / progress_
+            date_ = datetime.datetime.fromtimestamp(entry_['timeStart'])
+            dateless_ = date_ - datetime.datetime.now()
+            sub_title = get_sub_title(dateless_)
+            date_ = date_.strftime('%m月%d日%H:%M')
+            dateless_text = f'还有{dateless_.days}天'
+
         if 'timeStart' not in entry_:
             progress_ = entry_['edit'] - entry_['timeEnd']
             progress_ = (entry_['edit'] - time.time()) / progress_

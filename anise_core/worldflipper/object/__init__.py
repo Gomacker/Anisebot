@@ -8,74 +8,19 @@ from PIL import Image, ImageDraw
 from anise_core import RES_PATH
 
 LEVEL_CAP: dict = {
-    '1': [
-        '40',
-        '12',
-        '5',
-        '0.4',
-        '0.4'
-    ],
-    '2': [
-        '50',
-        '10',
-        '5',
-        '0.5',
-        '0.5'
-    ],
-    '3': [
-        '60',
-        '8',
-        '5',
-        '0.8',
-        '0.8'
-    ],
-    '4': [
-        '70',
-        '6',
-        '5',
-        '1.5',
-        '1.5'
-    ],
-    '5': [
-        '80',
-        '4',
-        '5',
-        '3',
-        '3'
-    ]
+    1: [40, 12, 5, 0.4, 0.4],
+    2: [50, 10, 5, 0.5, 0.5],
+    3: [60, 8, 5, 0.8, 0.8],
+    4: [70, 6, 5, 1.5, 1.5],
+    5: [80, 4, 5, 3, 3]
 }
 
 EVOLUTION_STATUS: dict = {
-    "1": [
-        "30",
-        "150",
-        "0",
-        "0"
-    ],
-    "2": [
-        "40",
-        "200",
-        "0",
-        "0"
-    ],
-    "3": [
-        "50",
-        "250",
-        "0",
-        "0"
-    ],
-    "4": [
-        "54",
-        "270",
-        "0",
-        "0"
-    ],
-    "5": [
-        "60",
-        "300",
-        "0",
-        "0"
-    ]
+    1: [30, 150, 0, 0],
+    2: [40, 200, 0, 0],
+    3: [50, 250, 0, 0],
+    4: [54, 270, 0, 0],
+    5: [60, 300, 0, 0]
 }
 
 
@@ -109,6 +54,7 @@ class Elements:
 
     @staticmethod
     def get(id_):
+        # id_ = id_.lower()
         if isinstance(id_, int):
             if id_ in id2ele:
                 return id2ele[id_]
@@ -125,22 +71,16 @@ class Elements:
 
 id2ele = dict()
 str2ele = dict()
-for k, v in vars(Elements).items():
-    if not k.startswith('__') and not k == 'get':
-        id2ele[v.id] = v
-        str2ele[v.en_name] = v
+for _k, _v in vars(Elements).items():
+    if not _k.startswith('__') and not _k == 'get':
+        id2ele[_v.id] = _v
+        str2ele[_v.en_name] = _v
 
 
 class WorldflipperObject:
-    """
-    弹射Object（可能会被弃用）
-    """
     def __init__(self, source_id: str, id_: int, extractor_id: str = ''):
         self.source_id: str = source_id
-        if id_:
-            self._id: int = id_
-        else:
-            self._id: int = UNKNOWN
+        self._id: int = id_
         self.extractor_id = extractor_id
         self._roster = []
 
@@ -181,26 +121,14 @@ class WorldflipperObject:
         return self.res('')
 
 
-UNKNOWN = 0
-
-
 class Unit(WorldflipperObject):
-    """
-    弹射角色对象
-    wf_id: 主ID
-    extraction_id: 资源ID
-    anise_id: Anise的临时ID（以实装时间排序）
-    legacy_id: 旧ID，已弃用
-    """
     def __init__(self, source_id: str, id_: int, data: dict):
         super().__init__(source_id, int(id_), data['extraction_id'])
         self._data = data
 
-    def wf_id(self) -> int:
+    @property
+    def wf_id(self) -> str:
         return self._data['wf_id']
-
-    def anise_id(self) -> int:
-        return self._data['anise_id']
 
     def data(self) -> dict:
         return self._data.copy()
@@ -229,6 +157,10 @@ class Unit(WorldflipperObject):
     @property
     def rarity(self):
         return self._data['rarity']
+
+    @property
+    def type(self):
+        return self._data['type']
 
     @property
     def pf_type(self):
@@ -325,9 +257,9 @@ class Unit(WorldflipperObject):
             return os.path.exists(f'{path}.{suffix}')
         else:
             return \
-                os.path.exists(path / f'{path}.gif') or \
-                os.path.exists(path / f'{path}.png') or \
-                os.path.exists(path / f'{path}.jpg')
+                os.path.exists(f'{path}.gif') or \
+                os.path.exists(f'{path}.png') or \
+                os.path.exists(f'{path}.jpg')
 
     def icon(self, awakened=False, size=88, with_frame=True) -> Image.Image:
         res_group = f'square212x/{"awakened" if awakened else "base"}'
@@ -371,15 +303,15 @@ class Unit(WorldflipperObject):
 
     @property
     def nature_max_level(self) -> int:
-        return int(LEVEL_CAP.get(str(self.rarity), [0])[0])
+        return LEVEL_CAP.get(self.rarity, [0])[0]
 
     def get_cap_count(self, level) -> int:
         nml = self.nature_max_level
-        return 0 if level <= nml else math.ceil((level - nml) / int(LEVEL_CAP.get(str(self.rarity))[2]))
+        return 0 if level <= nml else math.ceil((level - nml) / LEVEL_CAP.get(self.rarity)[2])
 
     @property
     def cap_rate(self) -> float:
-        return float(LEVEL_CAP[str(self.rarity)][3]) / 100
+        return LEVEL_CAP[self.rarity][3] / 100
 
     def _calculate_status(self, start, end, level_start, level_end, level, evolution):
         value = math.ceil(start + (((end - start) / (level_end - level_start)) * (level - level_start)))
@@ -395,14 +327,14 @@ class Unit(WorldflipperObject):
         if level in range(80, 100 + 1):
             sd1 = [int(x) for x in status_data['80']]
             sd2 = [int(x) for x in status_data['100']]
-            mhp = self._calculate_status(sd1[0], sd2[0], 80, 100, level, int(EVOLUTION_STATUS[str(self.rarity)][1]))
-            atk = self._calculate_status(sd1[1], sd2[1], 80, 100, level, int(EVOLUTION_STATUS[str(self.rarity)][0]))
+            mhp = self._calculate_status(sd1[0], sd2[0], 80, 100, level, EVOLUTION_STATUS[self.rarity][1])
+            atk = self._calculate_status(sd1[1], sd2[1], 80, 100, level, EVOLUTION_STATUS[self.rarity][0])
 
         elif level in range(10, 80):
             sd1 = [int(x) for x in status_data['10']]
             sd2 = [int(x) for x in status_data['80']]
-            mhp = self._calculate_status(sd1[0], sd2[0], 10, 80, level, int(EVOLUTION_STATUS[str(self.rarity)][1]) if level >= self.nature_max_level else 0)
-            atk = self._calculate_status(sd1[1], sd2[1], 10, 80, level, int(EVOLUTION_STATUS[str(self.rarity)][0]) if level >= self.nature_max_level else 0)
+            mhp = self._calculate_status(sd1[0], sd2[0], 10, 80, level, EVOLUTION_STATUS[self.rarity][1] if level >= self.nature_max_level else 0)
+            atk = self._calculate_status(sd1[1], sd2[1], 10, 80, level, EVOLUTION_STATUS[self.rarity][0] if level >= self.nature_max_level else 0)
         elif level in range(1, 10):
 
             sd1 = [int(x) for x in status_data['1']]
@@ -413,12 +345,6 @@ class Unit(WorldflipperObject):
 
 
 class Armament(WorldflipperObject):
-    """
-    弹射装备对象
-    wf_id: 主ID
-    extraction_id: 资源ID
-    anise_id: Anise的临时ID（以实装时间排序）
-    """
     def __init__(self, source_id: str, id_: int, data: dict):
         super().__init__(source_id, int(id_), data['extraction_id'])
         self._data = data
@@ -462,18 +388,18 @@ class Armament(WorldflipperObject):
             return os.path.exists(f'{path}.{suffix}')
         else:
             return \
-                os.path.exists(path / f'{path}.gif') or \
-                os.path.exists(path / f'{path}.png') or \
-                os.path.exists(path / f'{path}.jpg')
+                os.path.exists(f'{path}.gif') or \
+                os.path.exists(f'{path}.png') or \
+                os.path.exists(f'{path}.jpg')
 
     def icon(self, awakened=False, size=88, with_frame=True) -> Image.Image:
-        res_group = f''
+        res_group = f'generated/{"core" if awakened else "normal"}'
         pic = self.res(res_group)
         pic = pic.resize((212, 212), Image.NONE)
         if self.res_exists(res_group):
             if with_frame:
                 bg = Image.open(RES_PATH / 'worldflipper' / 'ui' / 'unit_background.png')
-                frame = Image.open(RES_PATH / 'worldflipper' / 'ui' / 'armament_frame.png')
+                frame = Image.open(RES_PATH / 'worldflipper' / 'ui' / 'unit_frame.png')
                 star_in_frame = Image.open(
                     RES_PATH / 'worldflipper' / 'ui' / 'star_in_frame' / f'star{self.rarity}inf.png')
                 ele: Image.Image = self.element.icon
@@ -490,8 +416,8 @@ class Armament(WorldflipperObject):
         return pic
 
     @property
-    def legacy_id(self):
-        return self._data['legacy_id']
+    def anise_id(self):
+        return self._data['anise_id']
 
     @property
     def element(self):

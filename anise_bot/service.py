@@ -190,7 +190,6 @@ class Service:
             elif isinstance(kwargs['rule'], list):
                 checkers += checkers
             del kwargs['rule']
-        print(checkers)
         rule = Rule(PackageChecker(*checkers))
         return on_message(rule=rule, **kwargs).handle()
 
@@ -206,7 +205,6 @@ class Service:
             elif isinstance(kwargs['rule'], list):
                 checkers += checkers
             del kwargs['rule']
-        print(checkers)
         rule = Rule(PackageChecker(*checkers))
         return on_message(rule=rule, **kwargs).handle()
 
@@ -222,7 +220,6 @@ class Service:
             elif isinstance(kwargs['rule'], list):
                 checkers += kwargs['rule']
             del kwargs['rule']
-        print(checkers)
         rule = Rule(PackageChecker(*checkers))
         return on_message(rule=rule, **kwargs).handle()
 

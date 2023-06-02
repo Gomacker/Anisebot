@@ -22,7 +22,6 @@ from anise_core import RES_PATH
 from anise_core.worldflipper import Unit, Armament, WorldflipperObject, wfm
 from .....utils import pic2b64
 
-
 class QueryManager:
     def __init__(self, source):
         self.source: str = source

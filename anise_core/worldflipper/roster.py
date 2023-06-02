@@ -14,7 +14,6 @@ from fuzzywuzzy import process
 from nonebot import logger
 
 from anise_core import RES_PATH
-from anise_core.worldflipper.manager import UNKNOWN
 
 
 class NicknameMaster:
@@ -38,6 +37,7 @@ class NicknameMaster:
             self.data_path_unit.write_text(json.dumps({}))
         with open(self.data_path_unit, 'r', encoding='utf-8') as f:
             data = json.loads(f.read())
+        # print(f'loadu:{data}')
         for id_ in data:
             self.names[f'u{id_}'] += data[id_]
 
@@ -46,6 +46,7 @@ class NicknameMaster:
             self.data_path_armament.write_text(json.dumps({}))
         with open(self.data_path_armament, 'r', encoding='utf-8') as f:
             data = json.loads(f.read())
+        # print(f'loada:{data}')
         for id_ in data:
             self.names[f'a{id_}'] += data[id_]
 
@@ -61,6 +62,7 @@ class NicknameMasterOrigin(NicknameMaster):
         super().__init__()
         self.data_path_unit: Path = unit_path
         self.data_path_armament: Path = armament_path
+        self.__load_data()
         self.__self_check()
         # print(self.names)
 
@@ -68,14 +70,17 @@ class NicknameMasterOrigin(NicknameMaster):
         for id_ in self.names:
             if '' in self.names[id_]:
                 self.names[id_].remove('')
+        # self.__save_data()
 
     def __load_data(self):
         if self.data_path_unit.exists():
             data: dict = json.loads(self.data_path_unit.read_text('utf-8'))
             for id_, value in data.items():
-                print(self.names)
-                print(value)
                 self.names[f'u{id_}'] += value['name']
+        if self.data_path_armament.exists():
+            data: dict = json.loads(self.data_path_armament.read_text('utf-8'))
+            for id_, value in data.items():
+                self.names[f'a{id_}'] += value['name']
 
     def __save_data(self):
         pass
@@ -94,13 +99,12 @@ class Roster:
         name_data = nickname_master.names
         for idx, names in name_data.items():
             for n in names:
-                # print(n)
                 n = normalize_str(n)
                 if n:
                     if n not in self._roster:
                         self._id2names[idx].append(n)
                         self._roster[n] = idx
-                    else:
+                    elif not isinstance(nickname_master, NicknameMasterOrigin):
                         logger.warning(f'Roster: 出现重名{n}于id{idx}与id{self._roster[n]}')
                         pass
         self._all_name_list = self._roster.keys()
@@ -113,7 +117,7 @@ class Roster:
         return self._id2names[id_]
 
     def get_id(self, name):
-        return self._roster[name] if name in self._roster else UNKNOWN
+        return self._roster[name] if name in self._roster else None
 
     def guess_id(self, name):
         name, score = process.extractOne(name, self._all_name_list)

@@ -4,7 +4,7 @@ from pathlib import Path
 from PIL import Image, ImageSequence
 
 from anise_core import RES_PATH
-from anise_core.worldflipper.object import Unit
+from anise_core.worldflipper import Unit
 
 
 def save_gif(frames: list[Image.Image], durations: list[int], path: Path) -> None:
@@ -58,10 +58,6 @@ def select_min_but_positive(l):
 
 
 def make_union_gif(units: list[Unit], bg: Image.Image = Image.new('RGBA', (480, 270), (240, 240, 240))):
-    """
-    返回一个Union的Gif
-    TODO 未完成
-    """
     path = RES_PATH / 'worldflipper' / 'unit' / 'pixelart/walk_front'
     gif_images = [GifSynchronizer(Image.open(path / f'{u.extractor_id}.gif')) for u in units]
 
@@ -80,12 +76,16 @@ def make_union_gif(units: list[Unit], bg: Image.Image = Image.new('RGBA', (480, 
         for frame, next_dur in frame_and_next_dur:
             temp = Image.new('RGBA', (frame.width, frame.height))
             temp.paste(frame, (0, 0))
+            # temp = temp.resize((temp.width // 2, temp.height // 2), Resampling.NEAREST)
+            # left_ = 25 + ((i//3) % 2)*42 + (i % 3)*128 - frame.width // 2
+            # top_ = 72 + (i//3)*16 - frame.height // 2
             left_ = (bg.width - 2*128 - 42) // 2 + ((i//3) % 2)*42 + (i % 3)*128 - frame.width // 2
             top_ = bg.height // 2 + (i//3)*16 - frame.height // 2
             frame_canvas.paste(temp, (left_, top_), mask=temp)
             i += 1
         frames.append(frame_canvas)
         durations.append(80 if first_frame else 100)
+        # durations.append(nextf[1])
         first_frame = False
         index_time += nextf[1]
     return frames, durations
