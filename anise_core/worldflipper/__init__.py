@@ -41,23 +41,19 @@ class ServerSource:
         else:
             return None
 
-    def _init(self, legacy=True):
-        if not legacy:
-            # self.data_path
-            pass
-        else:
-            print(f'ServerService {self.source_id} load objects')
-            os.makedirs(self.spare_data_path, exist_ok=True)
-            if not (self.spare_data_path / 'unit.json').exists():
-                (self.spare_data_path / 'unit.json').write_text(json.dumps({}))
-            if not (self.spare_data_path / 'armament.json').exists():
-                (self.spare_data_path / 'armament.json').write_text(json.dumps({}))
-            unit_data: dict = json.loads((self.spare_data_path / 'unit.json').read_text('utf-8'))
-            armament_data: dict = json.loads((self.spare_data_path / 'armament.json').read_text('utf-8'))
-            for id_, u in unit_data.items():
-                self.loaded_unit[id_] = Unit(self.source_id, id_, u)
-            for id_, a in armament_data.items():
-                self.loaded_armament[id_] = Armament(self.source_id, id_, a)
+    def _init(self):
+        print(f'ServerService {self.source_id} load objects')
+        os.makedirs(self.spare_data_path, exist_ok=True)
+        if not (self.spare_data_path / 'unit.json').exists():
+            (self.spare_data_path / 'unit.json').write_text(json.dumps({}))
+        if not (self.spare_data_path / 'armament.json').exists():
+            (self.spare_data_path / 'armament.json').write_text(json.dumps({}))
+        unit_data: dict = json.loads((self.spare_data_path / 'unit.json').read_text('utf-8'))
+        armament_data: dict = json.loads((self.spare_data_path / 'armament.json').read_text('utf-8'))
+        for id_, u in unit_data.items():
+            self.loaded_unit[id_] = Unit(self.source_id, id_, u)
+        for id_, a in armament_data.items():
+            self.loaded_armament[id_] = Armament(self.source_id, id_, a)
 
 
 class Manager:

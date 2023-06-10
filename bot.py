@@ -25,8 +25,8 @@ nonebot.init()
 app = nonebot.get_asgi()
 
 driver = nonebot.get_driver()
-# driver.register_adapter(ONEBOT_V11Adapter)
-driver.register_adapter(CONSOLE_Adapter)
+driver.register_adapter(ONEBOT_V11Adapter)
+# driver.register_adapter(CONSOLE_Adapter)
 # driver.register_adapter(ONEBOT_V12Adapter)
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
