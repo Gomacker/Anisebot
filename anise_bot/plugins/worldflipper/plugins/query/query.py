@@ -179,11 +179,11 @@ async def read_query_set(query_set: dict, text: str, e: Event) -> Message:
 
     elif query_set['type'] == 'schedule':
         result += MessageSegment.text('今日日程：\n')
-        result += gen_schedule(False)
+        result += await gen_schedule()
 
     elif query_set['type'] == 'schedule_qly':
         result += MessageSegment.text('千里眼：\n')
-        result += gen_schedule(True)
+        result += await gen_schedule()
 
     else:
         result += Service.get_send_content('worldflipper.query.failed') + '[未知的返回类型]'

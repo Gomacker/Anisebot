@@ -14,7 +14,7 @@ async def schedule_reply(bot: Bot, e: GroupMessageEvent):
         e,
         MessageSegment.at(e.user_id) +
         MessageSegment.text(f'今日日程：') +
-        gen_schedule(False)
+        await gen_schedule()
     )
 
 
@@ -29,4 +29,4 @@ async def kly_reply(bot, e: GroupMessageEvent):
         e,
         MessageSegment.at(e.user_id) +
         MessageSegment.text(f'目前的千里眼：\n千里眼基于过往活动数据预测，最终活动请以官宣内容为准\n') +
-        gen_schedule(True))
+        await gen_schedule())
