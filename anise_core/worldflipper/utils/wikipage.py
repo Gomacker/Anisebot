@@ -8,7 +8,7 @@ from pathlib import Path
 
 from PIL import Image
 
-from anise_core import RES_PATH
+from anise_core import RES_PATH, MAIN_URL
 from anise_core.worldflipper import WorldflipperObject, Unit, wfm
 from anise_core.worldflipper.playw import get_browser
 
@@ -50,7 +50,7 @@ class WikiPageGenerator:
         page = await b.new_page()
         await page.goto(
             # f'http://localhost/card/{"unit" if isinstance(self.obj, Unit) else "armament"}?source={self.obj.source_id}&wf_id={self.obj.id}',
-            f'http://meteorhouse.wiki/card/{"unit" if isinstance(self.obj, Unit) else "armament"}?wf_id={self.obj.id}',
+            f'{MAIN_URL}/card/{"unit" if isinstance(self.obj, Unit) else "armament"}?wf_id={self.obj.id}',
             wait_until='networkidle'
         )
         img = await page.locator('#main-card').screenshot(type='png', omit_background=True)

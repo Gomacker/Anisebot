@@ -1,4 +1,7 @@
+import asyncio
+
 from anise_core import DATA_PATH
+from anise_core.worldflipper.utils.update import update
 
 try:
     import ujson as json
@@ -170,14 +173,13 @@ class Manager:
 wfm: Manager = Manager()
 
 
-def reload_wfm():
+async def reload_wfm():
+    await update()
     wfm.clear()
     wfm.load_source(ServerSource('os', ''))
-    # wfm.load_source(ServerSource('sc', 'https://shijtswygamegf.leiting.com//api/index.php'))
-    # wfm.load_source(ServerSource('jp', ''))
-    # wfm.load_source(ServerSource('mh', ''))
 
-reload_wfm()
+loop = asyncio.get_event_loop()
+loop.run_until_complete(reload_wfm())
 
 if __name__ == '__main__':
     def test():
