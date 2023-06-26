@@ -132,10 +132,8 @@ async def search_wfo(text: str, e, main_source: str = None, strict=False) -> tup
                 img = MessageSegment.image(pic2b64(img))
                 return img, kwargs
         elif isinstance(target, Unit) or isinstance(target, Armament):
-            print(target, isinstance(target, Armament))
             wpg = WikiPageGenerator(target)
-            print('get wikipage from file')
-            return MessageSegment.image(wpg.get_pic_path()), kwargs
+            return MessageSegment.image(pic2b64(await wpg.get())), kwargs
     return None, {}
 
 

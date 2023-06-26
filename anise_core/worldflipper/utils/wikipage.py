@@ -1,13 +1,15 @@
+import asyncio
 import hashlib
 import io
 import json
 import os
+import time
 from pathlib import Path
 
 from PIL import Image
 
 from anise_core import RES_PATH
-from anise_core.worldflipper import WorldflipperObject, Unit
+from anise_core.worldflipper import WorldflipperObject, Unit, wfm
 from anise_core.worldflipper.playw import get_browser
 
 ICON_REPLACES: dict = {
@@ -47,7 +49,8 @@ class WikiPageGenerator:
         b = await get_browser()
         page = await b.new_page()
         await page.goto(
-            f'http://localhost/card/{"unit" if isinstance(self.obj, Unit) else "armament"}?source={self.obj.source_id}&wf_id={self.obj.id}',
+            # f'http://localhost/card/{"unit" if isinstance(self.obj, Unit) else "armament"}?source={self.obj.source_id}&wf_id={self.obj.id}',
+            f'http://meteorhouse.wiki/card/{"unit" if isinstance(self.obj, Unit) else "armament"}?wf_id={self.obj.id}',
             wait_until='networkidle'
         )
         img = await page.locator('#main-card').screenshot(type='png', omit_background=True)
@@ -56,8 +59,8 @@ class WikiPageGenerator:
 
         if save:
             img.save(
-                RES_PATH / 'worldflipper' / 'generated' / 'wikipage' /
-                self.obj.source_id / ('unit' if isinstance(self.obj, Unit) else 'armament') / f'{self.obj.id}.png'
+                RES_PATH / 'worldflipper' / 'generated' / 'wikipage' / self.obj.source_id /
+                ('unit' if isinstance(self.obj, Unit) else 'armament') / f'{self.obj.id}.png'
             )
             hash_path = (
                 RES_PATH / 'worldflipper' / 'generated' / 'wikipage' / self.obj.source_id /
@@ -71,3 +74,19 @@ class WikiPageGenerator:
             hash_path.write_text(json.dumps(hash_data, ensure_ascii=False, indent=2))
         return img
 
+    async def get(self) -> Image.Image:
+        if self.is_need_new():
+            return await self.get_pic(save=True)
+        else:
+            return Image.open(self.get_pic_path())
+
+if __name__ == '__main__':
+    async def test():
+        for u in wfm.units():
+            t = time.time()
+            wpg = WikiPageGenerator(u)
+            img = await wpg.get()
+            print(f'get img unit {u.id} {"%.2f" % (time.time() - t)}s')
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(test())
+    asyncio.set_event_loop(loop)

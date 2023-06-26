@@ -16,6 +16,7 @@ logger.add(
 
 nonebot.init()
 
+app = nonebot.get_asgi()
 driver = nonebot.get_driver()
 driver.register_adapter(ONEBOT_V11Adapter)
 
@@ -24,4 +25,4 @@ sys.path.append(str(Path(__file__).resolve().parents[1]))
 nonebot.load_from_toml("pyproject.toml")
 
 if __name__ == "__main__":
-    nonebot.run()
+    nonebot.run(app="__mp_main__:app")

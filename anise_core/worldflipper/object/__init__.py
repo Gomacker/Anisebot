@@ -54,7 +54,6 @@ class Elements:
 
     @staticmethod
     def get(id_):
-        # id_ = id_.lower()
         if isinstance(id_, int):
             if id_ in id2ele:
                 return id2ele[id_]
@@ -298,51 +297,57 @@ class Unit(WorldflipperObject):
             self.jp_name
         ]
 
-    def status_data(self) -> dict:
-        return json.loads(self._data['status_data'])
+    # def status_data(self) -> dict:
+    #     return json.loads(self._data['status_data'])
+    #
+    # @property
+    # def nature_max_level(self) -> int:
+    #     return LEVEL_CAP.get(self.rarity, [0])[0]
+    #
+    # def get_cap_count(self, level) -> int:
+    #     nml = self.nature_max_level
+    #     return 0 if level <= nml else math.ceil((level - nml) / LEVEL_CAP.get(self.rarity)[2])
+    #
+    # @property
+    # def cap_rate(self) -> float:
+    #     return LEVEL_CAP[self.rarity][3] / 100
+    #
+    # def _calculate_status(self, start, end, level_start, level_end, level, evolution):
+    #     value = math.ceil(start + (((end - start) / (level_end - level_start)) * (level - level_start)))
+    #     value = math.ceil(value * (1 + (self.get_cap_count(level) * self.cap_rate)))
+    #     value = value + int(evolution)
+    #     return value
+    #
+    # def get_status(self, level: int) -> Tuple[int, int]:
+    #     status_data = self.status_data()
+    #     mhp: int = 0
+    #     atk: int = 0
+    #     level = max(0, min(100, level))
+    #     if level in range(80, 100 + 1):
+    #         sd1 = [int(x) for x in status_data['80']]
+    #         sd2 = [int(x) for x in status_data['100']]
+    #         mhp = self._calculate_status(sd1[0], sd2[0], 80, 100, level, EVOLUTION_STATUS[self.rarity][1])
+    #         atk = self._calculate_status(sd1[1], sd2[1], 80, 100, level, EVOLUTION_STATUS[self.rarity][0])
+    #
+    #     elif level in range(10, 80):
+    #         sd1 = [int(x) for x in status_data['10']]
+    #         sd2 = [int(x) for x in status_data['80']]
+    #         mhp = self._calculate_status(sd1[0], sd2[0], 10, 80, level, EVOLUTION_STATUS[self.rarity][1] if level >= self.nature_max_level else 0)
+    #         atk = self._calculate_status(sd1[1], sd2[1], 10, 80, level, EVOLUTION_STATUS[self.rarity][0] if level >= self.nature_max_level else 0)
+    #     elif level in range(1, 10):
+    #
+    #         sd1 = [int(x) for x in status_data['1']]
+    #         sd2 = [int(x) for x in status_data['10']]
+    #         mhp = self._calculate_status(sd1[0], sd2[0], 1, 10, level, 0)
+    #         atk = self._calculate_status(sd1[1], sd2[1], 1, 10, level, 0)
+    #     return mhp, atk
 
-    @property
-    def nature_max_level(self) -> int:
-        return LEVEL_CAP.get(self.rarity, [0])[0]
-
-    def get_cap_count(self, level) -> int:
-        nml = self.nature_max_level
-        return 0 if level <= nml else math.ceil((level - nml) / LEVEL_CAP.get(self.rarity)[2])
-
-    @property
-    def cap_rate(self) -> float:
-        return LEVEL_CAP[self.rarity][3] / 100
-
-    def _calculate_status(self, start, end, level_start, level_end, level, evolution):
-        value = math.ceil(start + (((end - start) / (level_end - level_start)) * (level - level_start)))
-        value = math.ceil(value * (1 + (self.get_cap_count(level) * self.cap_rate)))
-        value = value + int(evolution)
-        return value
-
-    def get_status(self, level: int) -> Tuple[int, int]:
-        status_data = self.status_data()
-        mhp: int = 0
-        atk: int = 0
-        level = max(0, min(100, level))
-        if level in range(80, 100 + 1):
-            sd1 = [int(x) for x in status_data['80']]
-            sd2 = [int(x) for x in status_data['100']]
-            mhp = self._calculate_status(sd1[0], sd2[0], 80, 100, level, EVOLUTION_STATUS[self.rarity][1])
-            atk = self._calculate_status(sd1[1], sd2[1], 80, 100, level, EVOLUTION_STATUS[self.rarity][0])
-
-        elif level in range(10, 80):
-            sd1 = [int(x) for x in status_data['10']]
-            sd2 = [int(x) for x in status_data['80']]
-            mhp = self._calculate_status(sd1[0], sd2[0], 10, 80, level, EVOLUTION_STATUS[self.rarity][1] if level >= self.nature_max_level else 0)
-            atk = self._calculate_status(sd1[1], sd2[1], 10, 80, level, EVOLUTION_STATUS[self.rarity][0] if level >= self.nature_max_level else 0)
-        elif level in range(1, 10):
-
-            sd1 = [int(x) for x in status_data['1']]
-            sd2 = [int(x) for x in status_data['10']]
-            mhp = self._calculate_status(sd1[0], sd2[0], 1, 10, level, 0)
-            atk = self._calculate_status(sd1[1], sd2[1], 1, 10, level, 0)
-        return mhp, atk
-
+    def get_status(self, max_level: bool) -> Tuple[int, int]:
+        status = self._data.get('status', {})
+        if max_level:
+            return status.get('mhp', 0), status.get('atk', 0)
+        else:
+            return status.get('mmhp', 0), status.get('matk', 0)
 
 class Armament(WorldflipperObject):
     def __init__(self, source_id: str, id_: int, data: dict):

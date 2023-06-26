@@ -1,12 +1,31 @@
 import hashlib
+import json
 
 import requests
 from nonebot import logger
 
-from anise_core import RES_PATH
+from anise_core import RES_PATH, DATA_PATH
 
+
+def update_worldflipper_objects():
+    path = DATA_PATH / 'worldflipper' / 'object' / 'os'
+    logger.info(f'获取open source unit data ...')
+    r = requests.post('http://meteorhouse.wiki/api/v1/data/unit/')
+    (path / 'unit.json').write_bytes(r.content)
+    logger.info(f'获取open source armament data ...')
+    r = requests.post('http://meteorhouse.wiki/api/v1/data/armament/')
+    (path / 'armament.json').write_bytes(r.content)
+    logger.info(f'获取open source roster data ...')
+    r = requests.post('http://meteorhouse.wiki/api/v1/data/roster/')
+    roster: dict = r.json()
+    (RES_PATH / 'worldflipper' / 'roster' / 'roster_unit.json').write_text(json.dumps(roster.get('unit', {}), indent=2, ensure_ascii=False), 'utf-8')
+    (RES_PATH / 'worldflipper' / 'roster' / 'roster_armament.json').write_text(json.dumps(roster.get('armament', {}), indent=2, ensure_ascii=False), 'utf-8')
 
 def main():
+    # logger.info(f'获取query/config.json ...')
+    # r = requests.post('http://meteorhouse.wiki/api/v1/query/get/?path=config.json')
+    # logger.info(f'获取query/config.json ...')
+    # r = requests.post('http://meteorhouse.wiki/api/v1/query/get/?path=config.json')
     logger.info(f'获取query/config.json ...')
     r = requests.post('http://meteorhouse.wiki/api/v1/query/get/?path=config.json')
     data: dict = r.json()
@@ -26,4 +45,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    update_worldflipper_objects()
+    # main()

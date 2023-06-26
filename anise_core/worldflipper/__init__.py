@@ -67,9 +67,9 @@ class Manager:
     def loaded_source_ids(self) -> list[str]:
         return list(self._loaded_sources.keys())
 
-    def load_source(self, source: str, server: ServerSource):
-        self._server_sources_arranged.append(source)
-        self._loaded_sources[source] = server
+    def load_source(self, server: ServerSource):
+        self._server_sources_arranged.append(server.source_id)
+        self._loaded_sources[server.source_id] = server
         self.roster.update(
             NicknameMasterOrigin(server.spare_data_path / 'unit.json', server.spare_data_path / 'armament.json')
         )
@@ -172,8 +172,14 @@ wfm: Manager = Manager()
 
 def reload_wfm():
     wfm.clear()
-    wfm.load_source('sc', ServerSource('sc', 'https://shijtswygamegf.leiting.com//api/index.php'))
-    wfm.load_source('jp', ServerSource('jp', ''))
-    wfm.load_source('mh', ServerSource('mh', ''))
+    wfm.load_source(ServerSource('os', ''))
+    # wfm.load_source(ServerSource('sc', 'https://shijtswygamegf.leiting.com//api/index.php'))
+    # wfm.load_source(ServerSource('jp', ''))
+    # wfm.load_source(ServerSource('mh', ''))
 
 reload_wfm()
+
+if __name__ == '__main__':
+    def test():
+        print('\n'.join([str(x.data()) for x in wfm.units()]))
+    test()
