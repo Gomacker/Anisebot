@@ -44,7 +44,7 @@ async def update_worldflipper_query():
                     need_update = not path_res.exists() or not h.text == (h2 := hashlib.md5(path_res.read_bytes()).hexdigest())
                     if need_update:
                         logger.info(f'正在更新{query_item["src"]} ...' + (f'{h.text} -> {h2}' if h2 else ''))
-                        res = await httpx_client.get(f'{MAIN_URL}/api/v1/query/get/?path={query_item["src"]}&hash={h}')
+                        res = await httpx_client.get(f'{MAIN_URL}/api/v1/query/get/?path={query_item["src"]}&hash={h.text}')
                         path_res.write_bytes(res.content)
 
     (RES_PATH / 'worldflipper' / 'query' / 'config.json').write_bytes(r.content)
