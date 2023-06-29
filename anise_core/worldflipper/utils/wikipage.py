@@ -1,7 +1,10 @@
 import asyncio
 import hashlib
 import io
-import json
+try:
+    import ujson as json
+except ModuleNotFoundError:
+    import json
 import os
 import time
 from pathlib import Path

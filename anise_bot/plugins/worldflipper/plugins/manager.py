@@ -1,4 +1,7 @@
-import json
+try:
+    import ujson as json
+except ModuleNotFoundError:
+    import json
 import os
 
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Bot

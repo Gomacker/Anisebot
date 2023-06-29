@@ -5,8 +5,6 @@ from .....service import Service
 
 sv = Service('schedule')
 
-# TODO 注：未整理
-
 
 @sv.on_fullmatch(('sc', '日程'))
 async def schedule_reply(bot: Bot, e: GroupMessageEvent):

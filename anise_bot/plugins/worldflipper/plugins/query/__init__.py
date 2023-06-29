@@ -15,9 +15,8 @@ from collections import defaultdict
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import Bot, MessageSegment, GroupMessageEvent, Event, Message
 
-from anise_core import DATA_PATH
 from .....service import Service
-from .....utils import FreqLimiter, pic2b64
+from .....utils import FreqLimiter
 from .query import query_manager, query, get_target
 
 sv = Service('worldflipper.query')
@@ -31,18 +30,7 @@ on_query_stack = defaultdict(tuple[str, int])
 logger.success(f'已加载{query_manager.init()}个query索引')
 
 
-async def write_query_statistic(text):
-    query_log_path = DATA_PATH / 'logs' / 'query.json'
-    os.makedirs(query_log_path.parent, exist_ok=True)
-    if not query_log_path.exists():
-        query_log_path.write_text(json.dumps({}), 'utf-8')
-    query_log: dict = defaultdict(int, json.loads(query_log_path.read_text('utf-8')))
-    query_log[text] += 1
-    query_log = {k: v for k, v in sorted(query_log.items(), key=lambda x: x[1], reverse=True)}
-    query_log_path.write_text(json.dumps(query_log, ensure_ascii=False, indent=2), 'utf-8')
-
-
-@sv.on_prefix(('qr', '查询', '搜索'))
+@sv.on_prefix(('qr', '查询', '搜索', '/'))
 async def _(bot: Bot, e: GroupMessageEvent):
     await wfm.statistic.add('query.count')
     text = e.get_message().extract_plain_text().strip()
@@ -51,7 +39,6 @@ async def _(bot: Bot, e: GroupMessageEvent):
         print(f'查询事件: {text}')
         print(f'查询来源: g{e.group_id}, q{e.user_id}')
         print(f'查询接收: q{e.self_id}, m{e.message_id}')
-        await write_query_statistic(text)
         try:
             query_result = await query(text, e)
             query_result = Message(f'(耗时{"%.2f" % (time.time() - t)}s)\n') + query_result
@@ -75,36 +62,6 @@ async def _(bot: Bot, e: GroupMessageEvent):
             )
         print(f'send query result: self: {e.self_id}, msg: {e.message_id}, time: {time.strftime("%Y%m%d %H:%M:%S")}')
         print(f'发送完毕: {"%2f" % (time.time() - t)}s')
-    else:
-        pass
-
-
-@sv_whois.on_prefix(('谁是',))
-@sv_whois.on_suffix(('是谁', '是哪个', '是啥', '是啥me', '是什么'))
-async def _(bot: Bot, e: GroupMessageEvent):
-    text = e.get_plaintext()
-    target, source, guess_content = get_target(text, get_source_id(e.group_id, e.user_id))
-    print(text, target)
-    print(wfm.roster.size)
-    if target:
-        if source < 60:
-            if len(text) <= 2:
-                return
-            await bot.send(
-                e,
-                MessageSegment.at(e.user_id) +
-                Service.get_send_content('worldflipper.query.guess')
-                .format(guess_content=guess_content) +
-                MessageSegment.image(pic2b64(target.icon(size=88))) +
-                f'{list(filter(lambda x: x, target.main_roster))[0]}'
-            )
-        else:
-            await bot.send(
-                e,
-                MessageSegment.at(e.user_id) +
-                MessageSegment.image(pic2b64(target.icon(size=88))) +
-                f'{list(filter(lambda x: x, target.main_roster))[0]}'
-            )
     else:
         pass
 
