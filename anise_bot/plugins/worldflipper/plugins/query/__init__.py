@@ -27,7 +27,8 @@ query_group_cooldown = FreqLimiter(6)
 query_private_cooldown = FreqLimiter(12)
 on_query_stack = defaultdict(tuple[str, int])
 
-logger.success(f'已加载{query_manager.init()}个query索引')
+query_manager.init()
+logger.success(f'已加载query索引')
 
 
 @sv.on_prefix(('qr', '查询', '搜索', '/'))
@@ -69,5 +70,5 @@ async def _(bot: Bot, e: GroupMessageEvent):
 @sv.on_fullmatch('重载索引')
 async def _(bot: Bot, e: Event):
     if Service.SUPERUSER(bot, e):
-        logger.success(f'已加载{query_manager.init()}个query索引')
-        await bot.send(e, f'{query_manager.init()}个索引重载完毕!')
+        query_manager.init()
+        await bot.send(e, f'索引重载完毕!')
