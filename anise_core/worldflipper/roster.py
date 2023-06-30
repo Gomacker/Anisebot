@@ -19,17 +19,15 @@ from anise_core import RES_PATH
 class NicknameMaster:
     def __init__(self):
         self.names: dict[str, list] = defaultdict(list)
-        self.data_path_unit = RES_PATH / 'worldflipper' / 'roster' / 'roster_unit.json'
-        self.data_path_armament = RES_PATH / 'worldflipper' / 'roster' / 'roster_armament.json'
+        self.data_path_unit = RES_PATH / 'roster' / 'roster_unit.json'
+        self.data_path_armament = RES_PATH / 'roster' / 'roster_armament.json'
         self.__load_data()
         self.__self_check()
-        # print(self.names)
 
     def __self_check(self):
         for id_ in self.names:
             if '' in self.names[id_]:
                 self.names[id_].remove('')
-        # self.__save_data()
 
     def __load_data(self):
         if not self.data_path_unit.exists():
@@ -37,7 +35,6 @@ class NicknameMaster:
             self.data_path_unit.write_text(json.dumps({}))
         with open(self.data_path_unit, 'r', encoding='utf-8') as f:
             data = json.loads(f.read())
-        # print(f'loadu:{data}')
         for id_ in data:
             self.names[f'u{id_}'] += data[id_]
 

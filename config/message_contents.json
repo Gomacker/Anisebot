@@ -1,5 +1,5 @@
 {
-  "worldflipper.query.success": "查到了以下内容",
+  "worldflipper.query.success": "查到了以下内容\n",
   "worldflipper.query.failed": "没有查到相关内容……",
   "worldflipper.query.guess": "没有查到相关内容……\n是不是在找{guess_content}\n",
   "worldflipper.query.whois.failed": "没有找到这个角色",

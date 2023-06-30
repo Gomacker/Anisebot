@@ -15,7 +15,7 @@ from anise_core import RES_PATH, DATA_PATH, MAIN_URL, CONFIG_PATH
 
 
 async def update_worldflipper_objects():
-    path = DATA_PATH / 'worldflipper' / 'object' / 'os'
+    path = DATA_PATH / 'object' / 'os'
     os.makedirs(path, exist_ok=True)
     logger.info(f'获取open source unit data ...')
     r = requests.post(f'{MAIN_URL}/api/v1/data/unit/')
@@ -26,8 +26,8 @@ async def update_worldflipper_objects():
     logger.info(f'获取open source roster data ...')
     r = requests.post(f'{MAIN_URL}/api/v1/data/roster/')
     roster: dict = r.json()
-    (RES_PATH / 'worldflipper' / 'roster' / 'roster_unit.json').write_text(json.dumps(roster.get('unit', {}), indent=2, ensure_ascii=False), 'utf-8')
-    (RES_PATH / 'worldflipper' / 'roster' / 'roster_armament.json').write_text(json.dumps(roster.get('armament', {}), indent=2, ensure_ascii=False), 'utf-8')
+    (RES_PATH / 'roster' / 'roster_unit.json').write_text(json.dumps(roster.get('unit', {}), indent=2, ensure_ascii=False), 'utf-8')
+    (RES_PATH / 'roster' / 'roster_armament.json').write_text(json.dumps(roster.get('armament', {}), indent=2, ensure_ascii=False), 'utf-8')
 
 
 async def update_worldflipper_query():
@@ -40,7 +40,7 @@ async def update_worldflipper_query():
                 if query_item['type'] == 'image':
                     logger.info(f'检查更新{query_item["src"]} ...')
                     h = await httpx_client.get(f'{MAIN_URL}/api/v1/query/hash/?path={query_item["src"]}')
-                    path_res = RES_PATH / 'worldflipper' / 'query' / query_item['src']
+                    path_res = RES_PATH / 'query' / query_item['src']
                     os.makedirs(path_res.parent, exist_ok=True)
 
                     h2 = None
@@ -50,11 +50,11 @@ async def update_worldflipper_query():
                         res = await httpx_client.get(f'{MAIN_URL}/api/v1/query/get/?path={query_item["src"]}&hash={h.text}')
                         path_res.write_bytes(res.content)
 
-    (RES_PATH / 'worldflipper' / 'query' / 'config.json').write_bytes(r.content)
+    (RES_PATH / 'query' / 'config.json').write_bytes(r.content)
 
 
 async def update():
-    path = CONFIG_PATH / 'worldflipper' / 'config.toml'
+    path = CONFIG_PATH / 'config.toml'
     os.makedirs(path.parent, exist_ok=True)
     if not path.exists():
         await update_worldflipper_objects()

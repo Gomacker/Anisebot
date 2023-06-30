@@ -1,7 +1,8 @@
 import asyncio
 
+from nonebot import logger
+
 from anise_core import DATA_PATH
-from anise_core.worldflipper.utils.update import update
 
 try:
     import ujson as json
@@ -19,7 +20,7 @@ class ServerSource:
     def __init__(self, source_id: str, api: str):
         self.source_id = source_id
         self.api = api
-        self.spare_data_path: Path = DATA_PATH / 'worldflipper' / 'object' / source_id
+        self.spare_data_path: Path = DATA_PATH / 'object' / source_id
         self.loaded_unit: dict[str, Unit] = dict()
         self.loaded_armament: dict[str, Armament] = dict()
         self._init()
@@ -45,7 +46,7 @@ class ServerSource:
             return None
 
     def _init(self):
-        print(f'ServerService {self.source_id} load objects')
+        logger.info(f'ServerService {self.source_id} load objects')
         os.makedirs(self.spare_data_path, exist_ok=True)
         if not (self.spare_data_path / 'unit.json').exists():
             (self.spare_data_path / 'unit.json').write_text(json.dumps({}))
@@ -173,13 +174,11 @@ class Manager:
 wfm: Manager = Manager()
 
 
-async def reload_wfm():
-    await update()
+def reload_wfm():
     wfm.clear()
     wfm.load_source(ServerSource('os', ''))
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(reload_wfm())
+reload_wfm()
 
 if __name__ == '__main__':
     def test():

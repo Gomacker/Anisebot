@@ -58,7 +58,7 @@ def select_min_but_positive(l):
 
 
 def make_union_gif(units: list[Unit], bg: Image.Image = Image.new('RGBA', (480, 270), (240, 240, 240))):
-    path = RES_PATH / 'worldflipper' / 'unit' / 'pixelart/walk_front'
+    path = RES_PATH / 'unit' / 'pixelart/walk_front'
     gif_images = [GifSynchronizer(Image.open(path / f'{u.extractor_id}.gif')) for u in units]
 
     index_time = 0

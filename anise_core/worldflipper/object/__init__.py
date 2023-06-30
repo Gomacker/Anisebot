@@ -34,11 +34,11 @@ class Element:
 
     @property
     def icon(self):
-        return Image.open(RES_PATH / 'worldflipper' / 'ui/icon/normal' / f'{self.en_name}.png')
+        return Image.open(RES_PATH / 'ui/icon/normal' / f'{self.en_name}.png')
 
     @property
     def desc_icon(self):
-        return Image.open(RES_PATH / 'worldflipper' / 'ui/icon/desc' / f'{self.en_name}.png')
+        return Image.open(RES_PATH / 'ui/icon/desc' / f'{self.en_name}.png')
 
 
 class Elements:
@@ -233,7 +233,7 @@ class Unit(WorldflipperObject):
         :param suffix: 文件后缀
         :return: 对应的资源
         """
-        path = RES_PATH / 'worldflipper' / 'unit' / res_group / f'{self.extractor_id}'
+        path = RES_PATH / 'unit' / res_group / f'{self.extractor_id}'
         if suffix:
             if os.path.exists(f'{path}.{suffix}'):
                 return Image.open(f'{path}.{suffix}')
@@ -249,7 +249,7 @@ class Unit(WorldflipperObject):
             return super().res(res_group)
 
     def res_exists(self, res_group, suffix=None) -> bool:
-        path = RES_PATH / 'worldflipper' / 'unit' / res_group / f'{self.extractor_id}'
+        path = RES_PATH / 'unit' / res_group / f'{self.extractor_id}'
         if suffix:
             return os.path.exists(f'{path}.{suffix}')
         else:
@@ -264,10 +264,10 @@ class Unit(WorldflipperObject):
         pic = pic.resize((212, 212), Image.NONE)
         if self.res_exists(res_group):
             if with_frame:
-                bg = Image.open(RES_PATH / 'worldflipper' / 'ui' / 'unit_background.png')
-                frame = Image.open(RES_PATH / 'worldflipper' / 'ui' / 'unit_frame.png')
+                bg = Image.open(RES_PATH / 'ui' / 'unit_background.png')
+                frame = Image.open(RES_PATH / 'ui' / 'unit_frame.png')
                 star_in_frame = Image.open(
-                    RES_PATH / 'worldflipper' / 'ui' / 'star_in_frame' / f'star{self.rarity}inf.png')
+                    RES_PATH / 'ui' / 'star_in_frame' / f'star{self.rarity}inf.png')
                 ele: Image.Image = self.element.icon
                 canvas = Image.new('RGBA', (240, 240))
                 canvas.paste(bg, (14, 14), bg)
@@ -370,7 +370,7 @@ class Armament(WorldflipperObject):
         :param suffix: 文件后缀
         :return: 对应的资源
         """
-        path = RES_PATH / 'worldflipper' / 'armament' / res_group / f'{self.extractor_id}'
+        path = RES_PATH / 'armament' / res_group / f'{self.extractor_id}'
         if suffix:
             if os.path.exists(f'{path}.{suffix}'):
                 return Image.open(f'{path}.{suffix}')
@@ -386,7 +386,7 @@ class Armament(WorldflipperObject):
             return super().res(res_group)
 
     def res_exists(self, res_group, suffix=None) -> bool:
-        path = RES_PATH / 'worldflipper' / 'armament' / res_group / f'{self.extractor_id}'
+        path = RES_PATH / 'armament' / res_group / f'{self.extractor_id}'
         if suffix:
             return os.path.exists(f'{path}.{suffix}')
         else:
@@ -401,10 +401,10 @@ class Armament(WorldflipperObject):
         pic = pic.resize((212, 212), Image.NONE)
         if self.res_exists(res_group):
             if with_frame:
-                bg = Image.open(RES_PATH / 'worldflipper' / 'ui' / 'unit_background.png')
-                frame = Image.open(RES_PATH / 'worldflipper' / 'ui' / 'unit_frame.png')
+                bg = Image.open(RES_PATH / 'ui' / 'unit_background.png')
+                frame = Image.open(RES_PATH / 'ui' / 'unit_frame.png')
                 star_in_frame = Image.open(
-                    RES_PATH / 'worldflipper' / 'ui' / 'star_in_frame' / f'star{self.rarity}inf.png')
+                    RES_PATH / 'ui' / 'star_in_frame' / f'star{self.rarity}inf.png')
                 ele: Image.Image = self.element.icon
                 canvas = Image.new('RGBA', (240, 240))
                 canvas.paste(bg, (14, 14), bg)

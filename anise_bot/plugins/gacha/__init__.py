@@ -10,9 +10,9 @@ from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageSegment
 
 from anise_core.worldflipper import wfm
 from .gacha import Gacha, GACHA_POOL_CONFIG_PATH, GACHA_POOL_CONFIG
-from ..... import utils
-from .....service import Service
-from .....utils import pic2b64, FreqLimiter, DailyCountLimiter
+from anise_bot import utils
+from anise_bot.service import Service
+from anise_bot.utils import pic2b64, FreqLimiter, DailyCountLimiter
 
 sv = Service('worldflipper.gacha')
 

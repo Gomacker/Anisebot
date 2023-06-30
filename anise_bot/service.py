@@ -87,14 +87,6 @@ class _FullmatchChecker:
         return normalize_str(e.get_plaintext()) in self.text
 
 
-class OnlyBotChecker:
-    def __init__(self, uid: int):
-        self.uid = uid
-
-    async def __call__(self, e: Event):
-        return e.self_id == self.uid
-
-
 GLOBAL_COOLDOWN: FreqLimiter = FreqLimiter(0)  # 公共CD
 SILENT: FreqLimiter = FreqLimiter(60)  # bot静音 !注：禁言Bot可能会导致闷棍
 
@@ -168,7 +160,7 @@ class Service:
                 group_list[group_id].append(bot)
         return group_list
 
-    def check_enable(self, group_id: int) -> bool:
+    def check_enable(self, group_id: str) -> bool:
         enable = group_id in self.enable_group or (self.default_enable and group_id not in self.disable_group)
         return enable
 
@@ -223,12 +215,6 @@ class Service:
         rule = Rule(PackageChecker(*checkers))
         return on_message(rule=rule, **kwargs).handle()
 
-    # def scheduled_job(self, trigger, *args, **kwargs) -> Callable:
-    #     return scheduler.scheduled_job(trigger, *args, **kwargs)
-
-    def on_poke(self, **kwargs) -> Callable:
-        return on_notice(rule=Rule(self._service_checker, _poke_checker)).handle()
-
     async def _broadcast_on(self, groups, msgs, interval_time, limit_count, priority_group):
         groups = sorted(groups.items(), key=lambda x: x[0] in priority_group, reverse=True)
         groups = random.sample(groups, limit_count) if limit_count > 0 else groups
@@ -240,7 +226,7 @@ class Service:
                     await asyncio.sleep(interval_time)
                     await bot.send_group_msg(group_id=group_id, message=msg)
             except Exception as e:
-                pass
+                logger.exception(e)
 
     async def broadcast_on(self, groups, msgs, interval_time=5, limit_count=0, priority_group=None):
         if priority_group is None:
@@ -291,7 +277,6 @@ def _save_config(service: Service):
         ),
         'utf-8'
     )
-    # print(path)
 
 
 sv_permissions = nb_permission.SUPERUSER | onebot_permission.GROUP_ADMIN | onebot_permission.GROUP_OWNER

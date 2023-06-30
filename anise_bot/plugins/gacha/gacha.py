@@ -8,8 +8,8 @@ import random
 from anise_core import CONFIG_PATH
 from anise_core.worldflipper import wfm, WorldflipperObject
 
-GACHA_POOL_CONFIG = CONFIG_PATH / 'worldflipper' / 'gacha' / 'config.json'
-GACHA_POOL_CONFIG_PATH = CONFIG_PATH / 'worldflipper' / 'gacha' / 'pool'
+GACHA_POOL_CONFIG = CONFIG_PATH / 'gacha' / 'config.json'
+GACHA_POOL_CONFIG_PATH = CONFIG_PATH / 'gacha' / 'pool'
 
 
 class Gacha:

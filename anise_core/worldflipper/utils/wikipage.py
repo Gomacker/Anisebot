@@ -16,13 +16,13 @@ from anise_core.worldflipper import WorldflipperObject, Unit, wfm
 from anise_core.worldflipper.playw import get_browser
 
 ICON_REPLACES: dict = {
-    '火属性': RES_PATH / 'worldflipper' / 'ui/icon/desc' / 'fire.png',
-    '水属性': RES_PATH / 'worldflipper' / 'ui/icon/desc' / 'water.png',
-    '雷属性': RES_PATH / 'worldflipper' / 'ui/icon/desc' / 'thunder.png',
-    '风属性': RES_PATH / 'worldflipper' / 'ui/icon/desc' / 'wind.png',
-    '光属性': RES_PATH / 'worldflipper' / 'ui/icon/desc' / 'light.png',
-    '暗属性': RES_PATH / 'worldflipper' / 'ui/icon/desc' / 'dark.png',
-    '作为主要角色编成：': RES_PATH / 'worldflipper' / 'ui/icon/desc' / 'main.png'
+    '火属性': RES_PATH / 'ui/icon/desc' / 'fire.png',
+    '水属性': RES_PATH / 'ui/icon/desc' / 'water.png',
+    '雷属性': RES_PATH / 'ui/icon/desc' / 'thunder.png',
+    '风属性': RES_PATH / 'ui/icon/desc' / 'wind.png',
+    '光属性': RES_PATH / 'ui/icon/desc' / 'light.png',
+    '暗属性': RES_PATH / 'ui/icon/desc' / 'dark.png',
+    '作为主要角色编成：': RES_PATH / 'ui/icon/desc' / 'main.png'
 }
 
 
@@ -32,7 +32,7 @@ class WikiPageGenerator:
 
     def is_need_new(self) -> bool:
         hash_path = \
-            RES_PATH / 'worldflipper' / 'generated' / 'wikipage' / self.obj.source_id / \
+            RES_PATH / 'generated' / 'wikipage' / self.obj.source_id / \
             ('unit' if isinstance(self.obj, Unit) else 'armament') / f'hash_data.json'
         os.makedirs(hash_path.parent, exist_ok=True)
         if not hash_path.exists():
@@ -43,7 +43,7 @@ class WikiPageGenerator:
 
     def get_pic_path(self) -> Path:
         return (
-            RES_PATH / 'worldflipper' / 'generated' / 'wikipage' / self.obj.source_id /
+            RES_PATH / 'generated' / 'wikipage' / self.obj.source_id /
             ('unit' if isinstance(self.obj, Unit) else 'armament') / f'{self.obj.id}.png'
         )
 
@@ -52,7 +52,6 @@ class WikiPageGenerator:
         b = await get_browser()
         page = await b.new_page()
         await page.goto(
-            # f'http://localhost/card/{"unit" if isinstance(self.obj, Unit) else "armament"}?source={self.obj.source_id}&wf_id={self.obj.id}',
             f'{MAIN_URL}/card/{"unit" if isinstance(self.obj, Unit) else "armament"}?wf_id={self.obj.id}',
             wait_until='networkidle'
         )
@@ -62,11 +61,11 @@ class WikiPageGenerator:
 
         if save:
             img.save(
-                RES_PATH / 'worldflipper' / 'generated' / 'wikipage' / self.obj.source_id /
+                RES_PATH / 'generated' / 'wikipage' / self.obj.source_id /
                 ('unit' if isinstance(self.obj, Unit) else 'armament') / f'{self.obj.id}.png'
             )
             hash_path = (
-                RES_PATH / 'worldflipper' / 'generated' / 'wikipage' / self.obj.source_id /
+                RES_PATH / 'generated' / 'wikipage' / self.obj.source_id /
                 ('unit' if isinstance(self.obj, Unit) else 'armament') / f'hash_data.json'
             )
             if not hash_path.exists():

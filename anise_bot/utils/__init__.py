@@ -1,4 +1,5 @@
 import base64
+import io
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -8,10 +9,39 @@ from typing import Literal
 import pytz as pytz
 import unicodedata
 import zhconv
-from PIL import Image
+from PIL import Image, ImageSequence
 
 from . import dao
 
+
+def make_simple_bg(img: Image.Image) -> Image.Image:
+    """
+    目前qq的图片压缩逻辑，透明背景png会显示错误
+    所以要自行添加背景
+    """
+    bg: Image.Image = Image.new('RGBA', img.size, (240, 240, 240))
+    bg.paste(img, mask=img)
+    return bg
+
+
+def make_simple_gif_to_byte(img: Image.Image) -> io.BytesIO:
+    frames = list()
+    durations = list()
+    bg: Image.Image = Image.new('RGBA', img.size, (240, 240, 240))
+    for frame in ImageSequence.all_frames(img):
+        f_canvas = Image.new('RGBA', bg.size)
+        f_canvas.paste(bg)
+        temp = Image.new('RGBA', img.size)
+        temp.paste(frame)
+        f_canvas.paste(temp, (0, 0), mask=temp)
+        frames.append(f_canvas)
+        durations.append(frame.info['duration'])
+    buf = io.BytesIO()
+    frames[0].save(
+        buf, format='GIF', save_all=True, loop=0,
+        duration=durations, disposal=2, append_images=frames[1:]
+    )
+    return buf
 
 def normalize_str(s) -> str:
     s = unicodedata.normalize('NFKC', s)
