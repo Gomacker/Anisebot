@@ -1,5 +1,8 @@
 import base64
 import io
+import json
+import os
+import random
 import time
 from collections import defaultdict
 from datetime import datetime, timedelta
@@ -11,6 +14,7 @@ import unicodedata
 import zhconv
 from PIL import Image, ImageSequence
 
+from anise_core import CONFIG_PATH
 from . import dao
 
 
@@ -42,6 +46,23 @@ def make_simple_gif_to_byte(img: Image.Image) -> io.BytesIO:
         duration=durations, disposal=2, append_images=frames[1:]
     )
     return buf
+
+def get_send_content(message_key):
+    path = CONFIG_PATH / 'message_contents.json'
+    os.makedirs(path.parent, exist_ok=True)
+    if not path.exists():
+        path.write_text(json.dumps({}), 'utf-8')
+    data = json.loads(path.read_text('utf-8'))
+    result = None
+    if message_key in data:
+        result = data[message_key]
+
+    if isinstance(result, list):
+        return random.choice(result)
+    elif isinstance(result, str):
+        return result
+    else:
+        return message_key
 
 def normalize_str(s) -> str:
     s = unicodedata.normalize('NFKC', s)

@@ -14,8 +14,7 @@ from anise_core import MAIN_URL, RES_PATH
 from anise_core.worldflipper import wfm, WorldflipperObject, Armament, Unit
 from anise_core.worldflipper.utils.schedule import get_schedule
 from anise_core.worldflipper.utils.wikipage import WikiPageGenerator
-from ...service import Service
-from ...utils import pic2b64, make_simple_gif_to_byte, make_simple_bg
+from ...utils import pic2b64, make_simple_gif_to_byte, make_simple_bg, get_send_content
 
 
 class QuerySet:
@@ -34,7 +33,6 @@ class QueryObjects(QuerySet):
         params = text.split()
         res_group = None
         kwargs = {}
-        print(params)
         if params[-1] == 'img':
             extra_param = params[1:]
             awakened = 'a' in extra_param
@@ -66,14 +64,13 @@ class QueryObjects(QuerySet):
             search_str = text
             uid, score, guess_content = wfm.roster.guess_id(search_str)
             kwargs['guess_content'] = guess_content
-            print(search_str, uid, score)
             if score == 100 if strict else score > 60:
                 target: WorldflipperObject = wfm.get(uid, main_source)
         if target:
             if res_group:
                 if res_group in ('pixelart/special', 'pixelart/walk_front'):
                     if target.res_exists(res_group, 'gif'):
-                        img = target.res(res_group)
+                        img = target.res(res_group, 'gif')
                         buf = make_simple_gif_to_byte(img)
                         base64_str = base64.b64encode(buf.getvalue()).decode()
                         img = MessageSegment.image('base64://' + base64_str)
@@ -88,16 +85,16 @@ class QueryObjects(QuerySet):
         return None, {}
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
-        result = Message()
+        msg = Message()
         strict = self.data.get('strict', False)
         wfo_result, kwargs = await self.search_wfo(text, strict=strict)
         if wfo_result:
             if strict:
-                result += Service.get_send_content('worldflipper.query.success')
+                msg += get_send_content('worldflipper.query.success')
             else:
-                result += Service.get_send_content('worldflipper.query.guess').format(**kwargs)
-            result += wfo_result
-            return result
+                msg += get_send_content('worldflipper.query.guess').format(**kwargs)
+            msg += wfo_result
+            return msg
         else:
             return None
 
@@ -105,30 +102,30 @@ class QueryObjects(QuerySet):
 class QueryText(QuerySet):
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
-        result = Message()
-        result += Service.get_send_content('worldflipper.query.success')
-        result += MessageSegment.text(self.data.get('content', ''))
-        return result
+        msg = Message()
+        msg += get_send_content('worldflipper.query.success')
+        msg += MessageSegment.text(self.data.get('content', ''))
+        return msg
 
 
 class QuerySchedule(QuerySet):
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
-        result = Message()
-        result += MessageSegment.text('今日日程：\n')
-        result += MessageSegment.image(pic2b64(await get_schedule()))
-        return result
+        msg = Message()
+        msg += MessageSegment.text('今日日程：\n')
+        msg += MessageSegment.image(pic2b64(await get_schedule()))
+        return msg
 
 
 class QueryImage(QuerySet):
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
-        result = Message()
+        msg = Message()
         path = RES_PATH / 'query' / self.data.get('src', '')
         if path.exists():
-            result += Service.get_send_content('worldflipper.query.success')
-            result += MessageSegment.image(path)
-        return result
+            msg += get_send_content('worldflipper.query.success')
+            msg += MessageSegment.image(path)
+        return msg
 
 
 class QueryServerImage(QuerySet):
@@ -138,18 +135,18 @@ class QueryServerImage(QuerySet):
         self.main_url: str = main_url
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
-        result = Message()
+        msg = Message()
         url = self.data.get('url', '')
         try:
             async with httpx.AsyncClient() as client:
-                r = await client.get(f'{MAIN_URL.removesuffix("/")}{url}', timeout=30.0)
+                r = await client.get(f'{self.main_url.removesuffix("/")}{url}', timeout=30.0)
                 img = Image.open(io.BytesIO(r.content))
-                result += Service.get_send_content('worldflipper.query.success')
-                result += MessageSegment.image(pic2b64(img))
+                msg += get_send_content('worldflipper.query.success')
+                msg += MessageSegment.image(pic2b64(img))
         except Exception as ex:
             logger.exception(ex)
             return None
-        return result
+        return msg
 
 
 class QueryServerTable(QuerySet):
@@ -158,20 +155,20 @@ class QueryServerTable(QuerySet):
         self.main_url: str = main_url
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
-        result = Message()
+        msg = Message()
         cache_timeout = self.data.get('cache_timeout', True)
         table_id = self.data.get('table_id', '')
         cache_path = RES_PATH / 'query' / 'table' / f'{table_id}.png'
         os.makedirs(cache_path, exist_ok=True)
         need_cache = cache_path.stat().st_mtime + cache_timeout < time.time()
         if cache_path.exists() and not need_cache:
-            result += Service.get_send_content('worldflipper.query.success')
-            result += MessageSegment.image(cache_path)
+            msg += get_send_content('worldflipper.query.success')
+            msg += MessageSegment.image(cache_path)
         from anise_core.worldflipper import playw
         b = await playw.get_browser()
         page = await b.new_page()
         await page.goto(
-            f'{MAIN_URL.removesuffix("/")}/card/table/?table_id={table_id}&show_replacements=true',
+            f'{self.main_url.removesuffix("/")}/card/table/?table_id={table_id}&show_replacements=true',
             wait_until='networkidle'
         )
         img = await page.locator('.table').screenshot(type='png', omit_background=True)
@@ -179,7 +176,26 @@ class QueryServerTable(QuerySet):
         img = Image.open(io.BytesIO(img)).convert('RGBA')
         if need_cache:
             img.save(cache_path)
-        result += Service.get_send_content('worldflipper.query.success')
-        result += f'{MAIN_URL.removesuffix("/")}/table/{table_id}\n'
-        result += MessageSegment.image(pic2b64(img))
-        return result
+        msg += get_send_content('worldflipper.query.success')
+        msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
+        msg += MessageSegment.image(pic2b64(img))
+        return msg
+
+class QueryPartyPage(QuerySet):
+    def __init__(self, data: dict, main_url: str = MAIN_URL):
+        super().__init__(data)
+        self.main_url: str = main_url
+
+    async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
+        msg = Message()
+        async with httpx.AsyncClient() as client:
+            r = await client.post(f'{self.main_url.removesuffix("/")}/party/page/?search_text={text}&page_index={1}')
+            # TODO
+            if r.status_code == 200:
+                print(r.json())
+        from anise_core.worldflipper import playw
+        b = await playw.get_browser()
+        page = await b.new_page()
+        await page.goto('')
+
+        return msg

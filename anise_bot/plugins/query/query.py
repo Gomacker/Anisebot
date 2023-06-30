@@ -43,8 +43,10 @@ class QueryManager:
     def register(self, type_id: str, query_type: type[QuerySet]):
         self.query_types[type_id] = query_type
 
-    async def query(self, text: str) -> Union[Message, None]:
-        for i, qs in self.query_map.items():
+    async def query(self, text: str, query_map: dict[str, dict]=None) -> Union[Message, None]:
+        if query_map is None:
+            query_map = self.query_map
+        for i, qs in query_map.items():
             for q in qs:
                 if ('regex' in q and re.findall(q['regex'], text)) or 'regex' not in q:
                     rst = await self.read_query_set(q, text)
