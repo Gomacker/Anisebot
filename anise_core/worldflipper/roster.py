@@ -8,6 +8,7 @@ except ModuleNotFoundError:
 import os
 
 import pygtrie
+import toml
 import unicodedata
 import zhconv as zhconv
 from fuzzywuzzy import process
@@ -19,8 +20,8 @@ from anise_core import RES_PATH
 class NicknameMaster:
     def __init__(self):
         self.names: dict[str, list] = defaultdict(list)
-        self.data_path_unit = RES_PATH / 'roster' / 'unit.json'
-        self.data_path_armament = RES_PATH / 'roster' / 'armament.json'
+        self.data_path_unit = RES_PATH / 'roster' / 'unit.toml'
+        self.data_path_armament = RES_PATH / 'roster' / 'armament.toml'
         self.__load_data()
         self.__self_check()
 
@@ -32,18 +33,17 @@ class NicknameMaster:
     def __load_data(self):
         if not self.data_path_unit.exists():
             os.makedirs(self.data_path_unit.parent, exist_ok=True)
-            self.data_path_unit.write_text(json.dumps({}))
+            self.data_path_unit.write_text(toml.dumps({}))
         with open(self.data_path_unit, 'r', encoding='utf-8') as f:
-            data = json.loads(f.read())
+            data = toml.loads(f.read())
         for id_ in data:
             self.names[f'u{id_}'] += data[id_]
 
         if not self.data_path_armament.exists():
             os.makedirs(self.data_path_armament.parent, exist_ok=True)
-            self.data_path_armament.write_text(json.dumps({}))
+            self.data_path_armament.write_text(toml.dumps({}))
         with open(self.data_path_armament, 'r', encoding='utf-8') as f:
-            data = json.loads(f.read())
-        # print(f'loada:{data}')
+            data = toml.loads(f.read())
         for id_ in data:
             self.names[f'a{id_}'] += data[id_]
 
@@ -126,3 +126,7 @@ def normalize_str(s) -> str:
     s = s.lower()
     s = zhconv.convert(s, 'zh-hans')
     return s
+
+
+if __name__ == '__main__':
+    print(toml.loads((RES_PATH / 'roster' / 'unit.toml').read_text('utf-8')))

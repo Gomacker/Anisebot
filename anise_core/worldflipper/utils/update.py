@@ -1,5 +1,8 @@
 import asyncio
 import hashlib
+
+import toml
+
 try:
     import ujson as json
 except ModuleNotFoundError:
@@ -26,31 +29,31 @@ async def update_worldflipper_objects():
     logger.info(f'获取open source roster data ...')
     r = requests.post(f'{MAIN_URL}/api/v1/data/roster/')
     roster: dict = r.json()
-    (RES_PATH / 'roster' / 'unit.json').write_text(json.dumps(roster.get('unit', {}), indent=2, ensure_ascii=False), 'utf-8')
-    (RES_PATH / 'roster' / 'armament.json').write_text(json.dumps(roster.get('armament', {}), indent=2, ensure_ascii=False), 'utf-8')
+    (RES_PATH / 'roster' / 'unit.toml').write_text(toml.dumps(roster.get('unit', {})), 'utf-8')
+    (RES_PATH / 'roster' / 'armament.toml').write_text(toml.dumps(roster.get('armament', {})), 'utf-8')
 
 
-async def update_worldflipper_query():
-    logger.info(f'获取query/config.json ...')
-    r = requests.post(f'{MAIN_URL}/api/v1/query/get/?path=config.json')
-    data: dict = r.json()
-    async with httpx.AsyncClient(timeout=30) as httpx_client:
-        for k, v in data.items():
-            for query_item in v:
-                if query_item['type'] == 'image':
-                    logger.info(f'检查更新{query_item["src"]} ...')
-                    h = await httpx_client.get(f'{MAIN_URL}/api/v1/query/hash/?path={query_item["src"]}')
-                    path_res = RES_PATH / 'query' / query_item['src']
-                    os.makedirs(path_res.parent, exist_ok=True)
-
-                    h2 = None
-                    need_update = not path_res.exists() or not h.text == (h2 := hashlib.md5(path_res.read_bytes()).hexdigest())
-                    if need_update:
-                        logger.info(f'正在更新{query_item["src"]} ...' + (f'{h.text} -> {h2}' if h2 else ''))
-                        res = await httpx_client.get(f'{MAIN_URL}/api/v1/query/get/?path={query_item["src"]}&hash={h.text}')
-                        path_res.write_bytes(res.content)
-
-    (RES_PATH / 'query' / 'config.json').write_bytes(r.content)
+# async def update_worldflipper_query():
+#     logger.info(f'获取query/config.json ...')
+#     r = requests.post(f'{MAIN_URL}/api/v1/query/get/?path=config.json')
+#     data: dict = r.json()
+#     async with httpx.AsyncClient(timeout=30) as httpx_client:
+#         for k, v in data.items():
+#             for query_item in v:
+#                 if query_item['type'] == 'image':
+#                     logger.info(f'检查更新{query_item["src"]} ...')
+#                     h = await httpx_client.get(f'{MAIN_URL}/api/v1/query/hash/?path={query_item["src"]}')
+#                     path_res = RES_PATH / 'query' / query_item['src']
+#                     os.makedirs(path_res.parent, exist_ok=True)
+#
+#                     h2 = None
+#                     need_update = not path_res.exists() or not h.text == (h2 := hashlib.md5(path_res.read_bytes()).hexdigest())
+#                     if need_update:
+#                         logger.info(f'正在更新{query_item["src"]} ...' + (f'{h.text} -> {h2}' if h2 else ''))
+#                         res = await httpx_client.get(f'{MAIN_URL}/api/v1/query/get/?path={query_item["src"]}&hash={h.text}')
+#                         path_res.write_bytes(res.content)
+#
+#     (RES_PATH / 'query' / 'config.json').write_bytes(r.content)
 
 
 async def update():
@@ -58,12 +61,12 @@ async def update():
     os.makedirs(path.parent, exist_ok=True)
     if not path.exists():
         await update_worldflipper_objects()
-        await update_worldflipper_query()
+        # await update_worldflipper_query()
         path.write_text('update = false', 'utf-8')
     config = tomli.loads(path.read_text('utf-8'))
     if config.get('update', False):
         await update_worldflipper_objects()
-        await update_worldflipper_query()
+        # await update_worldflipper_query()
 
 
 if __name__ == '__main__':
