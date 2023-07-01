@@ -16,20 +16,10 @@
 ## How to start
 
 ### 脚本<del>（好像还是有点问题，欢迎大家推优化）</del>
-1. 首先安装python环境(推荐3.10.x)
-2. Win+R启动cmd或powershell运行以下命令
-   ```
-   pip install poetry
-   ```
-   安装poetry
+1. 如果缺少python，安装python环境 (推荐3.10.x)
+2. 运行安装依赖.bat
 3. 运行bot `runbot.bat`
-4. 运行
-   ```
-   playwright install
-   ```
-   来完善你的playwright依赖
-5. 重启 `runbot.bat`
-6. 配置并运行你的 bot 前端实现（[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 、 [mirai](https://mirai.mamoe.net/) 等）
+4. 配置并运行你的 bot 前端实现（[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 、 [mirai](https://mirai.mamoe.net/) 等）
    ```
    推荐用反向ws连接 ws://127.0.0.1:8080/onebot/v11/
    ```
