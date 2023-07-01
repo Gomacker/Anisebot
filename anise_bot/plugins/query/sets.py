@@ -163,29 +163,31 @@ class QueryServerTable(QuerySet):
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
         msg = Message()
-        cache_timeout = self.data.get('cache_timeout', True)
+        cache_timeout = self.data.get('cache_timeout', 60*60*24)
         table_id = self.data.get('table_id', '')
         cache_path = RES_PATH / 'query' / 'table' / f'{table_id}.png'
-        os.makedirs(cache_path, exist_ok=True)
-        need_cache = cache_path.stat().st_mtime + cache_timeout < time.time()
+        os.makedirs(cache_path.parent, exist_ok=True)
+        need_cache = cache_timeout != 0 and (not cache_path.exists() or (cache_path.exists() and cache_path.stat().st_mtime + cache_timeout < time.time()))
         if cache_path.exists() and not need_cache:
             msg += get_send_content('worldflipper.query.success')
+            msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
             msg += MessageSegment.image(cache_path)
-        from anise_core.worldflipper import playw
-        b = await playw.get_browser()
-        page = await b.new_page()
-        await page.goto(
-            f'{self.main_url.removesuffix("/")}/card/table/?table_id={table_id}&show_replacements=true',
-            wait_until='networkidle'
-        )
-        img = await page.locator('.table').screenshot(type='png', omit_background=True)
-        await page.close()
-        img = Image.open(io.BytesIO(img)).convert('RGBA')
-        if need_cache:
-            img.save(cache_path)
-        msg += get_send_content('worldflipper.query.success')
-        msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
-        msg += MessageSegment.image(pic2b64(img))
+        else:
+            from anise_core.worldflipper import playw
+            b = await playw.get_browser()
+            page = await b.new_page()
+            await page.goto(
+                f'{self.main_url.removesuffix("/")}/card/table/?table_id={table_id}&show_replacements=true',
+                wait_until='networkidle'
+            )
+            img = await page.locator('.table').screenshot(type='png', omit_background=True)
+            await page.close()
+            img = Image.open(io.BytesIO(img)).convert('RGBA')
+            if need_cache:
+                img.save(cache_path)
+            msg += get_send_content('worldflipper.query.success')
+            msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
+            msg += MessageSegment.image(pic2b64(img))
         return msg
 
 class QueryPartyPage(QuerySet):
