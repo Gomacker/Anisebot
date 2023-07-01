@@ -5,27 +5,12 @@ from PIL import Image, ImageDraw
 
 from anise_core import RES_PATH
 
-LEVEL_CAP: dict = {
-    1: [40, 12, 5, 0.4, 0.4],
-    2: [50, 10, 5, 0.5, 0.5],
-    3: [60, 8, 5, 0.8, 0.8],
-    4: [70, 6, 5, 1.5, 1.5],
-    5: [80, 4, 5, 3, 3]
-}
-
-EVOLUTION_STATUS: dict = {
-    1: [30, 150, 0, 0],
-    2: [40, 200, 0, 0],
-    3: [50, 250, 0, 0],
-    4: [54, 270, 0, 0],
-    5: [60, 300, 0, 0]
-}
-
 
 class Element:
     """
     属性类
     """
+
     def __init__(self, id_: int, inner_id: str, en_name: str, name: str):
         self.id = id_
         self.inner_id = inner_id
@@ -75,6 +60,8 @@ for _k, _v in vars(Elements).items():
 
 
 class WorldflipperObject:
+    obj_type = 'obj'
+
     def __init__(self, source_id: str, id_: int, extractor_id: str = ''):
         self.source_id: str = source_id
         self._id: int = id_
@@ -84,6 +71,9 @@ class WorldflipperObject:
     @property
     def id(self):
         return self._id
+
+    def data(self) -> dict:
+        return {}
 
     def res(self, res_group) -> Image.Image:
         img = Image.new('RGBA', (82, 82))
@@ -119,6 +109,8 @@ class WorldflipperObject:
 
 
 class Unit(WorldflipperObject):
+    obj_type = 'unit'
+
     def __init__(self, source_id: str, id_: int, data: dict):
         super().__init__(source_id, int(id_), data['extraction_id'])
         self._data = data
@@ -254,9 +246,9 @@ class Unit(WorldflipperObject):
             return os.path.exists(f'{path}.{suffix}')
         else:
             return \
-                os.path.exists(f'{path}.gif') or \
-                os.path.exists(f'{path}.png') or \
-                os.path.exists(f'{path}.jpg')
+                    os.path.exists(f'{path}.gif') or \
+                    os.path.exists(f'{path}.png') or \
+                    os.path.exists(f'{path}.jpg')
 
     def icon(self, awakened=False, size=88, with_frame=True) -> Image.Image:
         res_group = f'square212x/{"awakened" if awakened else "base"}'
@@ -295,51 +287,6 @@ class Unit(WorldflipperObject):
             self.jp_name
         ]
 
-    # def status_data(self) -> dict:
-    #     return json.loads(self._data['status_data'])
-    #
-    # @property
-    # def nature_max_level(self) -> int:
-    #     return LEVEL_CAP.get(self.rarity, [0])[0]
-    #
-    # def get_cap_count(self, level) -> int:
-    #     nml = self.nature_max_level
-    #     return 0 if level <= nml else math.ceil((level - nml) / LEVEL_CAP.get(self.rarity)[2])
-    #
-    # @property
-    # def cap_rate(self) -> float:
-    #     return LEVEL_CAP[self.rarity][3] / 100
-    #
-    # def _calculate_status(self, start, end, level_start, level_end, level, evolution):
-    #     value = math.ceil(start + (((end - start) / (level_end - level_start)) * (level - level_start)))
-    #     value = math.ceil(value * (1 + (self.get_cap_count(level) * self.cap_rate)))
-    #     value = value + int(evolution)
-    #     return value
-    #
-    # def get_status(self, level: int) -> Tuple[int, int]:
-    #     status_data = self.status_data()
-    #     mhp: int = 0
-    #     atk: int = 0
-    #     level = max(0, min(100, level))
-    #     if level in range(80, 100 + 1):
-    #         sd1 = [int(x) for x in status_data['80']]
-    #         sd2 = [int(x) for x in status_data['100']]
-    #         mhp = self._calculate_status(sd1[0], sd2[0], 80, 100, level, EVOLUTION_STATUS[self.rarity][1])
-    #         atk = self._calculate_status(sd1[1], sd2[1], 80, 100, level, EVOLUTION_STATUS[self.rarity][0])
-    #
-    #     elif level in range(10, 80):
-    #         sd1 = [int(x) for x in status_data['10']]
-    #         sd2 = [int(x) for x in status_data['80']]
-    #         mhp = self._calculate_status(sd1[0], sd2[0], 10, 80, level, EVOLUTION_STATUS[self.rarity][1] if level >= self.nature_max_level else 0)
-    #         atk = self._calculate_status(sd1[1], sd2[1], 10, 80, level, EVOLUTION_STATUS[self.rarity][0] if level >= self.nature_max_level else 0)
-    #     elif level in range(1, 10):
-    #
-    #         sd1 = [int(x) for x in status_data['1']]
-    #         sd2 = [int(x) for x in status_data['10']]
-    #         mhp = self._calculate_status(sd1[0], sd2[0], 1, 10, level, 0)
-    #         atk = self._calculate_status(sd1[1], sd2[1], 1, 10, level, 0)
-    #     return mhp, atk
-
     def get_status(self, max_level: bool) -> Tuple[int, int]:
         status = self._data.get('status', {})
         if max_level:
@@ -347,7 +294,10 @@ class Unit(WorldflipperObject):
         else:
             return status.get('mmhp', 0), status.get('matk', 0)
 
+
 class Armament(WorldflipperObject):
+    obj_type = 'armament'
+
     def __init__(self, source_id: str, id_: int, data: dict):
         super().__init__(source_id, int(id_), data['extraction_id'])
         self._data = data
@@ -391,9 +341,9 @@ class Armament(WorldflipperObject):
             return os.path.exists(f'{path}.{suffix}')
         else:
             return \
-                os.path.exists(f'{path}.gif') or \
-                os.path.exists(f'{path}.png') or \
-                os.path.exists(f'{path}.jpg')
+                    os.path.exists(f'{path}.gif') or \
+                    os.path.exists(f'{path}.png') or \
+                    os.path.exists(f'{path}.jpg')
 
     def icon(self, awakened=False, size=88, with_frame=True) -> Image.Image:
         res_group = f'generated/{"core" if awakened else "normal"}'
