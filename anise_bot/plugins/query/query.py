@@ -3,7 +3,8 @@ import typing
 from typing import Union
 
 from anise_bot.service import Service
-from .sets import QueryText, QuerySchedule, QueryImage, QueryObjects, QueryServerImage, QueryServerTable, QuerySet
+from .sets import QueryText, QuerySchedule, QueryImage, QueryObjects, QueryServerImage, QueryServerTable, QuerySet, \
+    QueryPartyPage
 
 try:
     import ujson as json
@@ -35,6 +36,7 @@ class QueryManager:
         self.register('schedule', QuerySchedule)
         self.register('image', QueryImage)
         self.register('wfo', QueryObjects)
+        self.register('pps', QueryPartyPage)
         self.register('server_image', QueryServerImage)
         self.register('server_table', QueryServerTable)
 
@@ -43,7 +45,7 @@ class QueryManager:
     def register(self, type_id: str, query_type: type[QuerySet]):
         self.query_types[type_id] = query_type
 
-    async def query(self, text: str, query_map: dict[str, dict]=None) -> Union[Message, None]:
+    async def query(self, text: str, query_map: dict[str, list]=None) -> Union[Message, None]:
         if query_map is None:
             query_map = self.query_map
         for i, qs in query_map.items():

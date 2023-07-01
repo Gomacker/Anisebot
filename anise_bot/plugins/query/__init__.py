@@ -1,3 +1,5 @@
+from nonebot.rule import to_me
+
 from anise_core.worldflipper import wfm
 
 try:
@@ -6,7 +8,7 @@ except ModuleNotFoundError:
     import json
 import time
 
-from nonebot import logger
+from nonebot import logger, on_message
 from nonebot.adapters.onebot.v11 import Bot, Event, Message, MessageEvent
 
 from anise_bot.service import Service
@@ -20,7 +22,8 @@ query_manager.init()
 logger.success(f'已加载query索引')
 
 
-@sv.on_prefix(('qr', '查询', '搜索', '/'))
+
+@sv.on_prefix(('qr', '/qr', '查询', '搜索', '/'))
 async def _(bot: Bot, e: MessageEvent):
     await wfm.statistic.add('query.count')
     text = e.get_message().extract_plain_text().strip()
@@ -34,13 +37,27 @@ async def _(bot: Bot, e: MessageEvent):
             query_result = Message(f'(耗时{"%.2f" % (time.time() - t)}s)\n') + query_result
         except Exception as ex:
             logger.exception(ex)
-            await bot.send(e, Service.get_send_content('worldflipper.query.failed') + '[发生错误]', at_sender=True)
+            await bot.send(e, Service.get_send_content('worldflipper.query.failed') + '[发生错误]', reply_message=True)
             return
         logger.debug(f'查询完毕: {"%2f" % (time.time() - t)}s')
-        await bot.send(e, query_result, at_sender=True)
+        await bot.send(e, query_result, reply_message=True)
         logger.debug(f'发送完毕: {"%2f" % (time.time() - t)}s')
-    else:
-        pass
+
+
+@sv.on_prefix(('pqr', '/pqr', '茶盘', '查盘', '#'))
+async def _(bot: Bot, e: MessageEvent):
+    await wfm.statistic.add('query.count')
+    text = e.get_message().extract_plain_text().strip()
+    if text:
+        try:
+            t = time.time()
+            query_result = await query_manager.query(text, query_map={"0": [{"type": "pps"}]})
+            query_result = Message(f'(耗时{"%.2f" % (time.time() - t)}s)\n') + query_result
+        except Exception as ex:
+            logger.exception(ex)
+            await bot.send(e, Service.get_send_content('worldflipper.query.failed') + '[发生错误]', reply_message=True)
+            return
+        await bot.send(e, query_result, reply_message=True)
 
 
 @sv.on_fullmatch('重载索引')
