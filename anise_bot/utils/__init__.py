@@ -47,6 +47,7 @@ def make_simple_gif_to_byte(img: Image.Image) -> io.BytesIO:
     )
     return buf
 
+
 def get_send_content(message_key):
     path = CONFIG_PATH / 'message_contents.json'
     os.makedirs(path.parent, exist_ok=True)
@@ -63,6 +64,7 @@ def get_send_content(message_key):
         return result
     else:
         return message_key
+
 
 def normalize_str(s) -> str:
     s = unicodedata.normalize('NFKC', s)

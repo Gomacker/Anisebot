@@ -12,7 +12,7 @@ from anise_core.worldflipper import wfm
 from .gacha import Gacha, GACHA_POOL_CONFIG_PATH, GACHA_POOL_CONFIG
 from anise_bot import utils
 from anise_bot.service import Service
-from anise_bot.utils import pic2b64, FreqLimiter, DailyCountLimiter
+from anise_bot.utils import pic2b64, FreqLimiter, DailyCountLimiter, get_send_content
 
 sv = Service('worldflipper.gacha')
 
@@ -120,7 +120,7 @@ async def _(bot: Bot, e: GroupMessageEvent):
     if not jewel_lmt.check(e.user_id):
         await bot.send(
             e,
-            Service.get_send_content('worldflipper.gacha.gacha_failed').format(max=jewel_lmt.max),
+            get_send_content('worldflipper.gacha.gacha_failed').format(max=jewel_lmt.max),
             reply_message=True
         )
         return
@@ -128,7 +128,7 @@ async def _(bot: Bot, e: GroupMessageEvent):
     chara = Gacha(_group_pool[e.group_id]).gacha_select(1)[0]
     await bot.send(
         e,
-        MessageSegment.text(Service.get_send_content('worldflipper.gacha.gacha_1')) +
+        MessageSegment.text(get_send_content('worldflipper.gacha.gacha_1')) +
         MessageSegment.image(pic2b64(chara.icon(size=62), format_="JPEG")) +
         f'\n{chara.name} {"★" * chara.rarity}',
         reply_message=True
@@ -143,7 +143,7 @@ async def _(bot: Bot, e: GroupMessageEvent):
     if not jewel_lmt.check(e.user_id):
         await bot.send(
             e,
-            Service.get_send_content('worldflipper.gacha.gacha_failed').format(max=jewel_lmt.max),
+            get_send_content('worldflipper.gacha.gacha_failed').format(max=jewel_lmt.max),
             reply_message=True
         )
         return
@@ -153,12 +153,12 @@ async def _(bot: Bot, e: GroupMessageEvent):
         jewel_lmt.increase(e.user_id, 1500)
         await wfm.statistic.add('gacha.count', 10)
         result = g.gacha_select(10)
-        text = Service.get_send_content('worldflipper.gacha.gacha_10')
+        text = get_send_content('worldflipper.gacha.gacha_10')
     else:
         jewel_lmt.increase(e.user_id, jewel_less)
         result = g.gacha_select(jewel_less // 150)
         await wfm.statistic.add('gacha.count', jewel_less // 150)
-        text = Service.get_send_content('worldflipper.gacha.gacha_less').format(jewel_less=jewel_less, count_less=jewel_less // 150)
+        text = get_send_content('worldflipper.gacha.gacha_less').format(jewel_less=jewel_less, count_less=jewel_less // 150)
 
     text += MessageSegment.image(pic2b64(utils.concat_pic([gen_team_pic(result[:5]), gen_team_pic(result[5:])]), format_='JPEG'))
     await bot.send(e, text, reply_message=True)
@@ -174,7 +174,7 @@ async def _(bot: Bot, e: GroupMessageEvent):
     if not jewel_lmt.check(e.user_id):
         await bot.send(
             e,
-            Service.get_send_content('worldflipper.gacha.gacha_failed').format(max=jewel_lmt.max),
+            get_send_content('worldflipper.gacha.gacha_failed').format(max=jewel_lmt.max),
             reply_message=True
         )
         return
@@ -189,7 +189,7 @@ async def _(bot: Bot, e: GroupMessageEvent):
         await bot.send(e, MessageSegment.reply(e.message_id) + '卡池设置不完整，请检查卡池配置')
     else:
         jewel_lmt.increase(e.user_id, jewel_less)
-        text = Service.get_send_content('worldflipper.gacha.gacha_all').format(jewel=jewel_less, count=jewel_less // 150)
+        text = get_send_content('worldflipper.gacha.gacha_all').format(jewel=jewel_less, count=jewel_less // 150)
         text += MessageSegment.image(pic2b64(utils.concat_pic(
             [gen_team_pic(units[i:i+5]) for i in range(0, len(units), 5)]
         ), format_='JPEG'))

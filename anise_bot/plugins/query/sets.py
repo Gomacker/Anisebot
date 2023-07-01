@@ -1,6 +1,7 @@
 import base64
 import hashlib
 import io
+
 try:
     import ujson as json
 except ModuleNotFoundError:
@@ -34,29 +35,28 @@ class QuerySet:
 
 class QueryObjects(QuerySet):
 
-    @staticmethod
-    async def search_wfo(text: str, main_source: str = None, strict=False) -> tuple[typing.Union[Message, MessageSegment, None], dict]:
+    async def search_wfo(self, text: str, main_source: str = None, strict=False) -> tuple[typing.Union[Message, MessageSegment, None], dict]:
         """角色武器通用 资源查找"""
         params = text.split()
-        res_group = None
+        # res_group = None
         kwargs = {}
-        if params[-1] == 'img':
-            extra_param = params[1:]
-            awakened = 'a' in extra_param
-            if 's212' in extra_param:
-                res_group = f'square212x/{"awakened" if awakened else "base"}'
-            elif 'fr' in extra_param:
-                res_group = f'full_resized/{"awakened" if awakened else "base"}'
-            elif 'ps' in extra_param:
-                res_group = f'pixelart/special'
-            elif 'pf' in extra_param:
-                res_group = f'pixelart/walk_front'
-        elif re.search('觉醒立绘', text):
-            text = text.replace('觉醒立绘', '')
-            res_group = f'full_resized/awakened'
-        elif re.search('立绘', text):
-            text = text.replace('立绘', '')
-            res_group = f'full_resized/base'
+        # if params[-1] == 'img':
+        #     extra_param = params[1:]
+        #     awakened = 'a' in extra_param
+        #     if 's212' in extra_param:
+        #         res_group = f'square212x/{"awakened" if awakened else "base"}'
+        #     elif 'fr' in extra_param:
+        #         res_group = f'full_resized/{"awakened" if awakened else "base"}'
+        #     elif 'ps' in extra_param:
+        #         res_group = f'pixelart/special'
+        #     elif 'pf' in extra_param:
+        #         res_group = f'pixelart/walk_front'
+        # elif re.search('觉醒立绘', text):
+        #     text = text.replace('觉醒立绘', '')
+        #     res_group = f'full_resized/awakened'
+        # elif re.search('立绘', text):
+        #     text = text.replace('立绘', '')
+        #     res_group = f'full_resized/base'
 
         search_str: str = params[0]
         target: None = None
@@ -74,20 +74,21 @@ class QueryObjects(QuerySet):
             if score == 100 if strict else score > 60:
                 target: WorldflipperObject = wfm.get(uid, main_source)
         if target:
-            if res_group:
-                if res_group in ('pixelart/special', 'pixelart/walk_front'):
-                    if target.res_exists(res_group, 'gif'):
-                        img = target.res(res_group, 'gif')
-                        buf = make_simple_gif_to_byte(img)
-                        base64_str = base64.b64encode(buf.getvalue()).decode()
-                        img = MessageSegment.image('base64://' + base64_str)
-                        return img, kwargs
-                elif target.res_exists(res_group):
-                    img = make_simple_bg(target.res(res_group))
-                    img = MessageSegment.image(pic2b64(img))
-                    return img, kwargs
-            elif isinstance(target, Unit) or isinstance(target, Armament):
-                wpg = WikiPageGenerator(target)
+            # if res_group:
+            #     if res_group in ('pixelart/special', 'pixelart/walk_front'):
+            #         if target.res_exists(res_group, 'gif'):
+            #             img = target.res(res_group, 'gif')
+            #             buf = make_simple_gif_to_byte(img)
+            #             base64_str = base64.b64encode(buf.getvalue()).decode()
+            #             img = MessageSegment.image('base64://' + base64_str)
+            #             return img, kwargs
+            #     elif target.res_exists(res_group):
+            #         img = make_simple_bg(target.res(res_group))
+            #         img = MessageSegment.image(pic2b64(img))
+            #         return img, kwargs
+            # elif isinstance(target, Unit) or isinstance(target, Armament):
+            if isinstance(target, Unit) or isinstance(target, Armament):
+                wpg = WikiPageGenerator(target, self.data.get('cache_timeout', 60 * 60 * 24))
                 return MessageSegment.image(pic2b64(await wpg.get())), kwargs
         return None, {}
 
@@ -128,7 +129,8 @@ class QueryImage(QuerySet):
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
         msg = Message()
-        path = RES_PATH / 'query' / self.data.get('src', '')
+        path = RES_PATH / 'query' / 'local' / self.data.get('src', '')
+        os.makedirs(path.parent, exist_ok=True)
         if path.exists():
             msg += get_send_content('worldflipper.query.success')
             msg += MessageSegment.image(path)
@@ -163,11 +165,11 @@ class QueryServerTable(QuerySet):
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
         msg = Message()
-        cache_timeout = self.data.get('cache_timeout', 60*60*24)
+        cache_timeout = self.data.get('cache_timeout', 60 * 60 * 24)
         table_id = self.data.get('table_id', '')
         cache_path = RES_PATH / 'query' / 'table' / f'{table_id}.png'
         os.makedirs(cache_path.parent, exist_ok=True)
-        need_cache = cache_timeout != 0 and (not cache_path.exists() or (cache_path.exists() and cache_path.stat().st_mtime + cache_timeout < time.time()))
+        need_cache = not cache_path.exists() or cache_path.stat().st_mtime + cache_timeout < time.time()
         if cache_path.exists() and not need_cache:
             msg += get_send_content('worldflipper.query.success')
             msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
@@ -189,6 +191,7 @@ class QueryServerTable(QuerySet):
             msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
             msg += MessageSegment.image(pic2b64(img))
         return msg
+
 
 class QueryPartyPage(QuerySet):
     def __init__(self, data: dict, main_url: str = MAIN_URL):

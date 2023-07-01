@@ -26,8 +26,8 @@ async def update_worldflipper_objects():
     logger.info(f'获取open source roster data ...')
     r = requests.post(f'{MAIN_URL}/api/v1/data/roster/')
     roster: dict = r.json()
-    (RES_PATH / 'roster' / 'roster_unit.json').write_text(json.dumps(roster.get('unit', {}), indent=2, ensure_ascii=False), 'utf-8')
-    (RES_PATH / 'roster' / 'roster_armament.json').write_text(json.dumps(roster.get('armament', {}), indent=2, ensure_ascii=False), 'utf-8')
+    (RES_PATH / 'roster' / 'unit.json').write_text(json.dumps(roster.get('unit', {}), indent=2, ensure_ascii=False), 'utf-8')
+    (RES_PATH / 'roster' / 'armament.json').write_text(json.dumps(roster.get('armament', {}), indent=2, ensure_ascii=False), 'utf-8')
 
 
 async def update_worldflipper_query():

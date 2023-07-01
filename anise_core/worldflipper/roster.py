@@ -19,8 +19,8 @@ from anise_core import RES_PATH
 class NicknameMaster:
     def __init__(self):
         self.names: dict[str, list] = defaultdict(list)
-        self.data_path_unit = RES_PATH / 'roster' / 'roster_unit.json'
-        self.data_path_armament = RES_PATH / 'roster' / 'roster_armament.json'
+        self.data_path_unit = RES_PATH / 'roster' / 'unit.json'
+        self.data_path_armament = RES_PATH / 'roster' / 'armament.json'
         self.__load_data()
         self.__self_check()
 

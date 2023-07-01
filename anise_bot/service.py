@@ -109,24 +109,6 @@ class Service:
 
         self.on_send_stack: dict[Callable, int] = defaultdict(int)
 
-    @staticmethod
-    def get_send_content(message_key):
-        path = CONFIG_PATH / 'message_contents.json'
-        os.makedirs(path.parent, exist_ok=True)
-        if not path.exists():
-            path.write_text(json.dumps({}), 'utf-8')
-        data = json.loads(path.read_text('utf-8'))
-        result = None
-        if message_key in data:
-            result = data[message_key]
-
-        if isinstance(result, list):
-            return random.choice(result)
-        elif isinstance(result, str):
-            return result
-        else:
-            return message_key
-
     @property
     def bots(self):
         return nonebot.get_bots()

@@ -1,6 +1,7 @@
 from nonebot.rule import to_me
 
 from anise_core.worldflipper import wfm
+from ...utils import get_send_content
 
 try:
     import ujson as json
@@ -22,7 +23,6 @@ query_manager.init()
 logger.success(f'已加载query索引')
 
 
-
 @sv.on_prefix(('qr', '/qr', '查询', '搜索', '/'))
 async def _(bot: Bot, e: MessageEvent):
     await wfm.statistic.add('query.count')
@@ -37,7 +37,7 @@ async def _(bot: Bot, e: MessageEvent):
             query_result = Message(f'(耗时{"%.2f" % (time.time() - t)}s)\n') + query_result
         except Exception as ex:
             logger.exception(ex)
-            await bot.send(e, Service.get_send_content('worldflipper.query.failed') + '[发生错误]', reply_message=True)
+            await bot.send(e, get_send_content('worldflipper.query.failed') + '[发生错误]', reply_message=True)
             return
         logger.debug(f'查询完毕: {"%2f" % (time.time() - t)}s')
         await bot.send(e, query_result, reply_message=True)
@@ -51,11 +51,11 @@ async def _(bot: Bot, e: MessageEvent):
     if text:
         try:
             t = time.time()
-            query_result = await query_manager.query(text, query_map={"0": [{"type": "pps"}]})
+            query_result = await query_manager.query(text, query_map=[{"type": "pps"}])
             query_result = Message(f'(耗时{"%.2f" % (time.time() - t)}s)\n') + query_result
         except Exception as ex:
             logger.exception(ex)
-            await bot.send(e, Service.get_send_content('worldflipper.query.failed') + '[发生错误]', reply_message=True)
+            await bot.send(e, get_send_content('worldflipper.query.failed') + '[发生错误]', reply_message=True)
             return
         await bot.send(e, query_result, reply_message=True)
 
