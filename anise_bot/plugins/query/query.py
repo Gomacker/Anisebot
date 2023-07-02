@@ -1,8 +1,6 @@
-import io
 import typing
 from typing import Union
 
-from anise_bot.service import Service
 from .sets import QueryText, QuerySchedule, QueryImage, QueryObjects, QueryServerImage, QueryServerTable, QuerySet, \
     QueryPartyPage
 from ...utils import get_send_content

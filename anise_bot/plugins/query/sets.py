@@ -1,4 +1,3 @@
-import base64
 import hashlib
 import io
 
@@ -22,7 +21,7 @@ from anise_core import MAIN_URL, RES_PATH
 from anise_core.worldflipper import wfm, WorldflipperObject, Armament, Unit
 from anise_core.worldflipper.utils.schedule import get_schedule
 from anise_core.worldflipper.utils.wikipage import WikiPageGenerator
-from ...utils import pic2b64, make_simple_gif_to_byte, make_simple_bg, get_send_content
+from ...utils import pic2b64, get_send_content
 
 
 class QuerySet:
@@ -142,20 +141,40 @@ class QueryServerImage(QuerySet):
     def __init__(self, data: dict, main_url=MAIN_URL):
         super().__init__(data)
         self.main_url: str = main_url
+        self.cache_timeout: float = 60 * 60 * 24
 
-    async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
-        msg = Message()
-        url = self.data.get('url', '')
-        try:
+
+    def get_pic_path(self):
+        path = RES_PATH / 'query' / 'cache' / f'{Path(self.data.get("url", "")).name}'
+        return path
+
+    def is_need_new(self) -> bool:
+        cache_path = self.get_pic_path()
+        return not cache_path.exists() or cache_path.stat().st_mtime + self.cache_timeout < time.time()
+
+    async def get_image(self) -> Image.Image:
+        if self.is_need_new():
             async with httpx.AsyncClient() as client:
+                url = self.data.get('url', '')
                 r = await client.get(f'{self.main_url.removesuffix("/")}{url}', timeout=30.0)
                 img = Image.open(io.BytesIO(r.content))
+                cache_path = self.get_pic_path()
+                os.makedirs(cache_path.parent, exist_ok=True)
+                img.save(cache_path)
+        else:
+            img = Image.open(self.get_pic_path())
+        return img
+
+    async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
+            msg = Message()
+            try:
+                img = await self.get_image()
                 msg += get_send_content('worldflipper.query.success')
                 msg += MessageSegment.image(pic2b64(img))
-        except Exception as ex:
-            logger.exception(ex)
-            return None
-        return msg
+            except Exception as ex:
+                logger.exception(ex)
+                return None
+            return msg
 
 
 class QueryServerTable(QuerySet):
@@ -199,8 +218,12 @@ class QueryPartyPage(QuerySet):
         self.main_url: str = main_url
 
     @staticmethod
+    def hash_path():
+        return RES_PATH / 'query' / 'party_hash.json'
+
+    @staticmethod
     def read_hash(text: str) -> typing.Union[str, None]:
-        path = Path('hash_test.json')
+        path = QueryPartyPage.hash_path()
         if not path.exists():
             return None
         else:
@@ -210,7 +233,7 @@ class QueryPartyPage(QuerySet):
 
     @staticmethod
     def write_hash(text: str, hash_: str):
-        path = Path('hash_test.json')
+        path = QueryPartyPage.hash_path()
         if not path.exists():
             os.makedirs(path.parent, exist_ok=True)
             path.write_text(json.dumps({}))
@@ -245,18 +268,20 @@ class QueryPartyPage(QuerySet):
         text, page_index = self.get_text_and_page(text)
         async with httpx.AsyncClient() as client:
             r = await client.post(
-                f'{MAIN_URL.removesuffix("/")}/api/v1/party/page/?search_text={text}&page_index={page_index}')
+                f'{MAIN_URL.removesuffix("/")}/api/v1/party/page/?search_text={text}&page_index={page_index}',
+                timeout=30.0
+            )
             if r.status_code == 200:
                 d: dict = r.json()
                 pts = d.get('parties', {})
                 hash_key = f'{text}_page{page_index}'
                 if pts:
-                    print(pts)
+                    logger.debug(pts)
                     h1 = hashlib.md5(json.dumps(pts).encode()).hexdigest()
                     h2 = self.read_hash(hash_key)
-                    print(h1, h2)
+                    logger.debug(h1, h2)
                     cache_path = RES_PATH / 'query' / 'party' / f'{hash_key}.png'
-                    print(f'exists: {cache_path.exists()}')
+                    logger.debug(f'exists: {cache_path.exists()}')
                     if h1 == h2 and cache_path.exists():
                         msg += MessageSegment.image(cache_path)
                     else:
@@ -265,11 +290,11 @@ class QueryPartyPage(QuerySet):
                         os.makedirs(cache_path.parent, exist_ok=True)
                         img.save(cache_path)
                         msg += MessageSegment.image(pic2b64(img))
-                    print(f'{hash_key} length: {len(pts)}')
+                    logger.debug(f'{hash_key} length: {len(pts)}')
 
                     return msg
                 else:
-                    print(f'it\'s empty in {hash_key}')
+                    logger.debug(f'it\'s empty in {hash_key}')
                     return None
             else:
                 return None
