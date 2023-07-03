@@ -1,4 +1,5 @@
 import asyncio
+import typing
 
 import httpx
 import toml
@@ -34,13 +35,13 @@ class ServerSource:
     def armaments(self) -> set[Armament]:
         return set(self.loaded_armament.values())
 
-    def get_unit(self, id_) -> Unit | None:
+    def get_unit(self, id_) -> typing.Union[Unit, None]:
         return self.loaded_unit.get(str(id_), None)
 
-    def get_armament(self, id_) -> Armament | None:
+    def get_armament(self, id_) -> typing.Union[Armament, None]:
         return self.loaded_armament.get(str(id_), None)
 
-    def get(self, id_: str) -> Unit | Armament | WorldflipperObject | None:
+    def get(self, id_: str) -> typing.Union[Unit, Armament, WorldflipperObject, None]:
         if id_.startswith('u'):
             return self.loaded_unit.get(id_[1:], None)
         elif id_.startswith('a'):
@@ -131,7 +132,7 @@ class Manager:
                     armaments[aid] = a
         return set(armaments.values())
 
-    def get_unit(self, id_, main_source: str = None) -> Unit | None:
+    def get_unit(self, id_, main_source: str = None) -> typing.Union[Unit, None]:
         result = None
         if main_source and main_source in self._loaded_sources:
             result = self._loaded_sources[main_source].get_unit(id_)
@@ -142,7 +143,7 @@ class Manager:
                     break
         return result
 
-    def get_armament(self, id_, main_source: str = None) -> Armament | None:
+    def get_armament(self, id_, main_source: str = None) -> typing.Union[Armament, None]:
         result = None
         if main_source and main_source in self._loaded_sources:
             result = self._loaded_sources[main_source].get_armament(id_)
@@ -153,7 +154,7 @@ class Manager:
                     break
         return result
 
-    def get(self, id_, main_source: str = None) -> Unit | Armament | WorldflipperObject | None:
+    def get(self, id_, main_source: str = None) -> typing.Union[Unit, Armament, WorldflipperObject, None]:
         result = None
         if main_source and main_source in self._loaded_sources:
             result = self._loaded_sources[main_source].get(id_)
@@ -173,7 +174,7 @@ class Manager:
         """
         return self.roster.guess_id(s)
 
-    def get_source(self, source_id: str) -> ServerSource | None:
+    def get_source(self, source_id: str) -> typing.Union[ServerSource, None]:
         return self._loaded_sources.get(source_id)
 
 
