@@ -188,7 +188,7 @@ async def init_wfm():
     path = CONFIG_PATH / 'config.toml'
     os.makedirs(path.parent, exist_ok=True)
     if not path.exists():
-        config = toml.loads(Path('config_default.toml').read_text('utf-8'))
+        config = toml.loads((Path(__file__).parent / 'config_default.toml').read_text('utf-8'))
         await update()
         async with httpx.AsyncClient() as client:
             r = await client.get(config['query']['config_url'], timeout=30.0)
