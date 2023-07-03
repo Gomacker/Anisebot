@@ -1,4 +1,6 @@
-from anise_core.worldflipper import wfm
+from anise_core import MAIN_URL
+from anise_core.worldflipper import wfm, reload_wfm
+from anise_core.worldflipper.utils.update import update
 from ...utils import get_send_content
 
 try:
@@ -47,6 +49,15 @@ async def _(bot: Bot, e: MessageEvent):
             await bot.send(e, get_send_content('worldflipper.query.failed') + '[发生错误]', reply_message=True)
             return
         await bot.send(e, query_result, reply_message=True)
+
+@sv.on_fullmatch(('同步库',))
+async def _(bot: Bot, e: MessageEvent):
+    if Service.SUPERUSER(bot, e):
+        await bot.send(e, f'正在从{MAIN_URL}同步库，请稍后...', reply_message=True)
+        await update()
+        reload_wfm()
+        await bot.send(e, f'同步完毕，{len(wfm.units())} Units and {len(wfm.armaments())} Armament loaded', reply_message=True)
+
 
 def reload_query():
     count = query_manager.init()

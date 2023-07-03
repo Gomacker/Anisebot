@@ -1,8 +1,11 @@
 import asyncio
 
+import httpx
+import toml
 from nonebot import logger
 
-from anise_core import DATA_PATH
+from anise_core import DATA_PATH, CONFIG_PATH
+from anise_core.worldflipper.utils.update import update
 
 try:
     import ujson as json
@@ -75,7 +78,10 @@ class Manager:
         self._server_sources_arranged.append(server.source_id)
         self._loaded_sources[server.source_id] = server
         self.roster.update(
-            NicknameMasterOrigin(server.spare_data_path / 'unit.json', server.spare_data_path / 'armament.json')
+            NicknameMasterOrigin(
+                server.spare_data_path / 'unit.json',
+                server.spare_data_path / 'armament.json'
+            )
         )
 
     def clear(self):
@@ -178,7 +184,25 @@ def reload_wfm():
     wfm.clear()
     wfm.load_source(ServerSource('os', ''))
 
-reload_wfm()
+async def init_wfm():
+    path = CONFIG_PATH / 'config.toml'
+    os.makedirs(path.parent, exist_ok=True)
+    if not path.exists():
+        config = toml.loads(Path('config_default.toml').read_text('utf-8'))
+        await update()
+        async with httpx.AsyncClient() as client:
+            r = await client.get(config['query']['config_url'], timeout=30.0)
+            qc_path = RES_PATH / 'query' / 'config.json'
+            os.makedirs(qc_path.parent)
+            qc_path.write_bytes(r.content)
+        path.write_text(toml.dumps(config), 'utf-8')
+    config = toml.loads(path.read_text('utf-8'))
+    if config.get('update', False):
+        await update()
+    reload_wfm()
+
+loop = asyncio.get_event_loop()
+loop.run_until_complete(init_wfm())
 
 if __name__ == '__main__':
     def test():

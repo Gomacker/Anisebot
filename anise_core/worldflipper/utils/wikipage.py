@@ -61,8 +61,9 @@ class WikiPageGenerator:
         img = Image.open(io.BytesIO(img)).convert('RGBA')
 
         if save:
-            img.save(RES_PATH / 'wikipage' / self.obj.source_id / self.obj.obj_type / f'{self.obj.extractor_id}.png')
-            # self.write_hash(self.obj.extractor_id, self.data_hash)
+            path = RES_PATH / 'wikipage' / self.obj.source_id / self.obj.obj_type / f'{self.obj.extractor_id}.png'
+            os.makedirs(path.parent)
+            img.save(path)
         return img
 
     async def get(self) -> Image.Image:
