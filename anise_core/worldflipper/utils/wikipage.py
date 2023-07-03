@@ -62,7 +62,7 @@ class WikiPageGenerator:
 
         if save:
             path = RES_PATH / 'wikipage' / self.obj.source_id / self.obj.obj_type / f'{self.obj.extractor_id}.png'
-            os.makedirs(path.parent)
+            os.makedirs(path.parent, exist_ok=True)
             img.save(path)
         return img
 
