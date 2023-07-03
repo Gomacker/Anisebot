@@ -193,7 +193,7 @@ async def init_wfm():
         async with httpx.AsyncClient() as client:
             r = await client.get(config['query']['config_url'], timeout=30.0)
             qc_path = RES_PATH / 'query' / 'config.json'
-            os.makedirs(qc_path.parent)
+            os.makedirs(qc_path.parent, exist_ok=True)
             qc_path.write_bytes(r.content)
         path.write_text(toml.dumps(config), 'utf-8')
     config = toml.loads(path.read_text('utf-8'))
