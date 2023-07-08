@@ -6,7 +6,7 @@ import os
 from collections import defaultdict
 
 from PIL import Image
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, MessageSegment
+from nonebot.adapters.qqguild import Bot, MessageSegment, MessageEvent
 
 from anise_core.worldflipper import wfm
 from .gacha import Gacha, GACHA_POOL_CONFIG_PATH, GACHA_POOL_CONFIG
@@ -47,7 +47,7 @@ action_lmt = FreqLimiter(4)
 
 
 @sv.on_fullmatch(('卡池资讯', '卡池咨询'))
-async def gacha_info(bot: Bot, e: GroupMessageEvent):
+async def gacha_info(bot: Bot, e: MessageEvent):
     ga = Gacha(_group_pool[e.group_id])
     msg = MessageSegment.text(f'本群组加载的卡池如下: \n')
     msg += '卡池up:\n'
@@ -62,7 +62,7 @@ async def gacha_info(bot: Bot, e: GroupMessageEvent):
 
 
 @sv.on_prefix(('切换卡池',))
-async def set_pool(bot: Bot, e: GroupMessageEvent):
+async def set_pool(bot: Bot, e: MessageEvent):
     if not (bool(Service.OWNER(bot, e)) or bool(Service.ADMIN(bot, e)) or bool(Service.SUPERUSER(bot, e))):
         await bot.send(e, '没有足够的权限切换本群卡池')
         return
@@ -77,7 +77,7 @@ async def set_pool(bot: Bot, e: GroupMessageEvent):
 
 
 @sv.on_prefix(('bc卡池',))
-async def bc_pool(bot: Bot, e: GroupMessageEvent):
+async def bc_pool(bot: Bot, e: MessageEvent):
     if not Service.SUPERUSER(bot, e):
         return
     pool_name = utils.normalize_str(e.get_plaintext())
@@ -114,7 +114,7 @@ def gen_team_pic(object_list, size=56):
 
 
 @sv.on_prefix(('单抽', '單抽'))
-async def _(bot: Bot, e: GroupMessageEvent):
+async def _(bot: Bot, e: MessageEvent):
     if len(e.get_plaintext()) > 6:
         return
     if not jewel_lmt.check(e.user_id):
@@ -137,7 +137,7 @@ async def _(bot: Bot, e: GroupMessageEvent):
 
 
 @sv.on_prefix(('十连', '十連'))
-async def _(bot: Bot, e: GroupMessageEvent):
+async def _(bot: Bot, e: MessageEvent):
     if len(e.get_plaintext()) > 6:
         return
     if not jewel_lmt.check(e.user_id):
@@ -165,7 +165,7 @@ async def _(bot: Bot, e: GroupMessageEvent):
 
 
 @sv.on_prefix(('抽干', '抽乾', '梭哈'))
-async def _(bot: Bot, e: GroupMessageEvent):
+async def _(bot: Bot, e: MessageEvent):
     if len(e.get_plaintext()) > 6:
         return
     print(f'抽干事件:')
@@ -197,7 +197,7 @@ async def _(bot: Bot, e: GroupMessageEvent):
 
 
 @sv.on_prefix(('氪金',))
-async def kakin(bot: Bot, ev: GroupMessageEvent):
+async def kakin(bot: Bot, ev: MessageEvent):
     if await Service.SUPERUSER(bot, ev):
         count = 0
         for m in ev.message:
@@ -219,7 +219,7 @@ async def kakin(bot: Bot, ev: GroupMessageEvent):
 
 
 @sv.on_prefix(('吸金',))
-async def xikin(bot: Bot, ev: GroupMessageEvent):
+async def xikin(bot: Bot, ev: MessageEvent):
     if not await Service.SUPERUSER(bot, ev):
         return
     count = 0

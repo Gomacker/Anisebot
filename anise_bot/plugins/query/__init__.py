@@ -10,7 +10,7 @@ except ModuleNotFoundError:
 import time
 
 from nonebot import logger
-from nonebot.adapters.onebot.v11 import Bot, Event, Message, MessageEvent
+from nonebot.adapters.qqguild import Bot, Event, Message, MessageEvent
 
 from anise_bot.service import Service
 from .query import query_manager
@@ -58,8 +58,11 @@ async def _(bot: Bot, e: MessageEvent):
         await bot.send(e, f'正在从{MAIN_URL}同步库，请稍后...', reply_message=True)
         await update()
         reload_wfm()
-        await bot.send(e, f'同步完毕，{len(wfm.units())} Units and {len(wfm.armaments())} Armament loaded',
-                       reply_message=True)
+        await bot.send(
+            e,
+            f'同步完毕，{len(wfm.units())} Units and {len(wfm.armaments())} Armament loaded',
+            reply_message=True
+        )
 
 
 def reload_query():

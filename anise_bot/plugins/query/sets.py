@@ -15,13 +15,13 @@ from urllib import parse
 import httpx
 from PIL import Image
 from nonebot import logger
-from nonebot.adapters.onebot.v11 import Message, MessageSegment
+from nonebot.adapters.qqguild import Message, MessageSegment
 
 from anise_core import MAIN_URL, RES_PATH
 from anise_core.worldflipper import wfm, WorldflipperObject, Armament, Unit
 from anise_core.worldflipper.utils.schedule import get_schedule
 from anise_core.worldflipper.utils.wikipage import WikiPageGenerator
-from ...utils import pic2b64, get_send_content
+from ...utils import pic2b64, get_send_content, pic2byteIO
 
 
 class QuerySet:
@@ -88,7 +88,7 @@ class QueryObjects(QuerySet):
             # elif isinstance(target, Unit) or isinstance(target, Armament):
             if isinstance(target, Unit) or isinstance(target, Armament):
                 wpg = WikiPageGenerator(target, self.data.get('cache_timeout', 60 * 60 * 24))
-                return MessageSegment.image(pic2b64(await wpg.get())), kwargs
+                return MessageSegment.file_image(pic2byteIO(await wpg.get())), kwargs
         return None, {}
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
@@ -120,7 +120,7 @@ class QuerySchedule(QuerySet):
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
         msg = Message()
         msg += MessageSegment.text('今日日程：\n')
-        msg += MessageSegment.image(pic2b64(await get_schedule()))
+        msg += MessageSegment.file_image(pic2byteIO((await get_schedule()).convert('RGB')))
         return msg
 
 
@@ -132,7 +132,7 @@ class QueryImage(QuerySet):
         os.makedirs(path.parent, exist_ok=True)
         if path.exists():
             msg += get_send_content('worldflipper.query.success')
-            msg += MessageSegment.image(path)
+            msg += MessageSegment.file_image(pic2byteIO(Image.open(path).convert('RGB')))
         return msg
 
 
@@ -170,7 +170,7 @@ class QueryServerImage(QuerySet):
             try:
                 img = await self.get_image()
                 msg += get_send_content('worldflipper.query.success')
-                msg += MessageSegment.image(pic2b64(img))
+                msg += MessageSegment.file_image(pic2byteIO(img.convert('RGB')))
             except Exception as ex:
                 logger.exception(ex)
                 return None
@@ -192,7 +192,7 @@ class QueryServerTable(QuerySet):
         if cache_path.exists() and not need_cache:
             msg += get_send_content('worldflipper.query.success')
             msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
-            msg += MessageSegment.image(cache_path)
+            msg += MessageSegment.file_image(pic2byteIO(Image.open(cache_path).convert('RGB')))
         else:
             from anise_core.worldflipper import playw
             b = await playw.get_browser()
@@ -203,12 +203,13 @@ class QueryServerTable(QuerySet):
             )
             img = await page.locator('.table').screenshot(type='png', omit_background=True)
             await page.close()
-            img = Image.open(io.BytesIO(img)).convert('RGBA')
+            # img = Image.open(io.BytesIO(img)).convert('RGBA')
+            img = Image.open(io.BytesIO(img)).convert('RGB')
             if need_cache:
                 img.save(cache_path)
             msg += get_send_content('worldflipper.query.success')
             msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
-            msg += MessageSegment.image(pic2b64(img))
+            msg += MessageSegment.file_image(pic2byteIO(img))
         return msg
 
 
@@ -283,13 +284,13 @@ class QueryPartyPage(QuerySet):
                     cache_path = RES_PATH / 'query' / 'party' / f'{hash_key}.png'
                     logger.debug(f'exists: {cache_path.exists()}')
                     if h1 == h2 and cache_path.exists():
-                        msg += MessageSegment.image(cache_path)
+                        msg += MessageSegment.file_image(pic2byteIO(Image.open(cache_path).convert('RGB')))
                     else:
                         self.write_hash(hash_key, h1)
                         img = await self.get_image(text, page_index)
                         os.makedirs(cache_path.parent, exist_ok=True)
                         img.save(cache_path)
-                        msg += MessageSegment.image(pic2b64(img))
+                        msg += MessageSegment.file_image(pic2byteIO(img.convert('RGB')))
                     logger.debug(f'{hash_key} length: {len(pts)}')
 
                     return msg

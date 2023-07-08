@@ -72,6 +72,10 @@ def normalize_str(s) -> str:
     s = zhconv.convert(s, 'zh-hans')
     return s
 
+def pic2byteIO(pic: Image.Image, format_: Literal['PNG', 'JPEG'] = 'PNG') -> BytesIO:
+    buf = BytesIO()
+    pic.save(buf, format=format_)
+    return buf
 
 def pic2b64(pic: Image.Image, format_: Literal['PNG', 'JPEG'] = 'PNG') -> str:
     buf = BytesIO()

@@ -22,7 +22,8 @@ nb-cli = "^1.1.2"
 
 [tool.nonebot]
 adapters = [
-    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
+    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" },
+    {name = "QQ 频道", module_name = "nonebot.adapters.qqguild"}
 ]
 plugins = []
 plugin_dirs = ["anise_bot/plugins"]

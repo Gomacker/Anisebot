@@ -12,7 +12,7 @@ except ModuleNotFoundError:
 import os
 import re
 
-from nonebot.adapters.onebot.v11 import MessageSegment, Message
+from nonebot.adapters.qqguild import MessageSegment, Message
 
 from anise_core import RES_PATH
 

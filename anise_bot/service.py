@@ -12,18 +12,17 @@ from typing import Callable
 import nonebot
 from nonebot import on_startswith, on_notice, logger, on_message, on_request
 from nonebot import permission as nb_permission
-from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Event, MessageSegment, Message, MessageEvent, \
-    GroupRequestEvent, NotifyEvent, GroupBanNoticeEvent, GroupDecreaseNoticeEvent, PrivateMessageEvent
-from nonebot.adapters.onebot.v11 import permission as onebot_permission
+from nonebot.adapters.qqguild import Bot, Event, MessageSegment, Message, MessageEvent
+from nonebot.adapters.qqguild import permission as onebot_permission
 from nonebot.internal.rule import Rule
 
 from anise_core import CONFIG_PATH
 from .utils import FreqLimiter, normalize_str
 
 
-async def _poke_checker(e: NotifyEvent) -> bool:
-    d = e.dict()
-    return d['target_id'] == e.self_id
+# async def _poke_checker(e: NotifyEvent) -> bool:
+#     d = e.dict()
+#     return d['target_id'] == e.self_id
 
 
 class PackageChecker:
@@ -45,7 +44,7 @@ class _PrefixChecker:
 
     async def __call__(self, e: MessageEvent):
         tmsg = None
-        for m in e.message:
+        for m in e.get_message():
             if m.type == 'text':
                 tmsg = m
                 break
@@ -54,7 +53,7 @@ class _PrefixChecker:
             for p in sorted(self.prefix, key=lambda x: len(x), reverse=True):
                 if tmsg.data['text'].startswith(p):
                     tmsg.data['text'] = tmsg.data['text'].removeprefix(p)
-                    logger.debug(f'True to prefix: {p} on {e.message_id}')
+                    logger.debug(f'True to prefix: {p} on {e.id}')
                     return True
             return False
         return False
@@ -92,8 +91,8 @@ SILENT: FreqLimiter = FreqLimiter(60)  # bot静音 !注：禁言Bot可能会导�
 
 
 class Service:
-    ADMIN = onebot_permission.GROUP_ADMIN
-    OWNER = onebot_permission.GROUP_OWNER
+    ADMIN = onebot_permission.GUILD_ADMIN
+    OWNER = onebot_permission.GUILD_OWNER
     SUPERUSER = nb_permission.SUPERUSER
 
     def __init__(self, name, default_enable=True):
@@ -150,7 +149,7 @@ class Service:
         d = e.dict()
         return \
             ('group_id' in d and self.check_enable(d['group_id']) and SILENT.check(d['group_id'])) \
-            or isinstance(e, PrivateMessageEvent)
+            or isinstance(e, MessageEvent)
 
     def on_prefix(self, prefix, **kwargs) -> Callable:
         if isinstance(prefix, str):
@@ -261,11 +260,11 @@ def _save_config(service: Service):
     )
 
 
-sv_permissions = nb_permission.SUPERUSER | onebot_permission.GROUP_ADMIN | onebot_permission.GROUP_OWNER
+sv_permissions = nb_permission.SUPERUSER | onebot_permission.GUILD_ADMIN | onebot_permission.GUILD_OWNER
 
 
 @on_startswith(('开启',), permission=sv_permissions).handle()
-async def _(bot: Bot, e: GroupMessageEvent):
+async def _(bot: Bot, e: MessageEvent):
     text = e.get_plaintext()[2:]
     if text:
         enabled = []
@@ -280,7 +279,7 @@ async def _(bot: Bot, e: GroupMessageEvent):
 
 
 @on_startswith(('关闭',), permission=sv_permissions).handle()
-async def _(bot: Bot, e: GroupMessageEvent):
+async def _(bot: Bot, e: MessageEvent):
     text = e.get_plaintext()[2:]
     if text:
         enabled = []
@@ -294,39 +293,39 @@ async def _(bot: Bot, e: GroupMessageEvent):
             await bot.send(e, '未找到相关模块')
 
 
-@on_startswith(('静音',), permission=sv_permissions).handle()
-async def _(bot: Bot, e: GroupMessageEvent):
-    text = e.get_plaintext()[2:]
-    if text.isdigit():
-        SILENT.start_cd(e.group_id, int(text))
-    elif not text:
-        SILENT.start_cd(e.group_id, 60)
-    else:
-        pass
+# @on_startswith(('静音',), permission=sv_permissions).handle()
+# async def _(bot: Bot, e: GroupMessageEvent):
+#     text = e.get_plaintext()[2:]
+#     if text.isdigit():
+#         SILENT.start_cd(e.group_id, int(text))
+#     elif not text:
+#         SILENT.start_cd(e.group_id, 60)
+#     else:
+#         pass
 
 
-@on_request().handle()
-async def _(bot: Bot, e: GroupRequestEvent):
-    if e.sub_type == 'invite':
-        await bot.send_private_msg(
-            user_id=int(list(bot.config.superusers)[0]),
-            message=Message(f'新收到1条群邀请: {e.group_id} from {e.user_id}')
-        )
-
-
-@on_notice().handle()
-async def _(bot: Bot, e: GroupBanNoticeEvent):
-    if e.sub_type == 'ban' and e.self_id == e.user_id and e.user_id != 0:
-        await bot.send_private_msg(
-            user_id=int(list(bot.config.superusers)[0]),
-            message=Message(f'于群{e.group_id} 被 {e.operator_id} 禁言 {e.duration}s')
-        )
-
-
-@on_notice().handle()
-async def _(bot: Bot, e: GroupDecreaseNoticeEvent):
-    if e.sub_type == 'kick_me':
-        await bot.send_private_msg(
-            user_id=int(list(bot.config.superusers)[0]),
-            message=Message(f'于群{e.group_id} 被 {e.operator_id} 踢出')
-        )
+# @on_request().handle()
+# async def _(bot: Bot, e: GroupRequestEvent):
+#     if e.sub_type == 'invite':
+#         await bot.send_private_msg(
+#             user_id=int(list(bot.config.superusers)[0]),
+#             message=Message(f'新收到1条群邀请: {e.group_id} from {e.user_id}')
+#         )
+#
+#
+# @on_notice().handle()
+# async def _(bot: Bot, e: GroupBanNoticeEvent):
+#     if e.sub_type == 'ban' and e.self_id == e.user_id and e.user_id != 0:
+#         await bot.send_private_msg(
+#             user_id=int(list(bot.config.superusers)[0]),
+#             message=Message(f'于群{e.group_id} 被 {e.operator_id} 禁言 {e.duration}s')
+#         )
+#
+#
+# @on_notice().handle()
+# async def _(bot: Bot, e: GroupDecreaseNoticeEvent):
+#     if e.sub_type == 'kick_me':
+#         await bot.send_private_msg(
+#             user_id=int(list(bot.config.superusers)[0]),
+#             message=Message(f'于群{e.group_id} 被 {e.operator_id} 踢出')
+#         )
