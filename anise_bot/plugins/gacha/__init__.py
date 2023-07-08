@@ -18,7 +18,7 @@ sv = Service('worldflipper.gacha')
 
 daily_max: int = 0
 
-_group_pool = dict()
+_group_pool: dict[int, str] = dict()
 
 
 def dump_pool_config():
@@ -42,7 +42,7 @@ with open(GACHA_POOL_CONFIG, 'r', encoding='utf-8') as f:
     dump_pool_config()
     # _group_pool = json.loads(GACHA_POOL_CONFIG.read_text('utf-8'))
 
-_group_pool = defaultdict(lambda: 'default', _group_pool)
+_group_pool: defaultdict[int, str] = defaultdict(lambda: 'default', _group_pool)
 action_lmt = FreqLimiter(4)
 
 
@@ -63,7 +63,8 @@ async def gacha_info(bot: Bot, e: GroupMessageEvent):
 
 @sv.on_prefix(('切换卡池',))
 async def set_pool(bot: Bot, e: GroupMessageEvent):
-    if not (bool(Service.OWNER(bot, e)) or bool(Service.ADMIN(bot, e)) or bool(Service.SUPERUSER(bot, e))):
+    # if not (bool(Service.OWNER(bot, e)) or bool(Service.ADMIN(bot, e)) or bool(Service.SUPERUSER(bot, e))):
+    if not await (Service.OWNER | Service.ADMIN | Service.SUPERUSER)(bot, e):
         await bot.send(e, '没有足够的权限切换本群卡池')
         return
     pool_name = utils.normalize_str(e.get_plaintext())
