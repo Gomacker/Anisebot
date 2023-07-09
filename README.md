@@ -2,16 +2,8 @@
 
 ## Lite 版本
  - [x] 基础Query
- - [x] 基础Gacha
- - [ ] WikiPageGenerator
- - [ ] 查盘器实现
- - [ ] 自动转换数据包
- - [ ] 玩家 / 房间查询
-
-## 注：
-   1. 对大部分明文数据做了极度简化的处理，在角色上修并修正后会补全
-   2. 测试用资源包：[Alpha(0.1)](https://github.com/Gomacker/Anisebot/releases/tag/v0.1-alpha)
-
+ - [x] 一图同步
+ - [x] 查盘器实现
 
 ## How to start
 
