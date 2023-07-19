@@ -1,5 +1,6 @@
 import hashlib
 import io
+from json import JSONDecodeError
 
 try:
     import ujson as json
@@ -227,7 +228,11 @@ class QueryPartyPage(QuerySet):
         if not path.exists():
             return None
         else:
-            d = json.loads(path.read_text('utf-8'))
+            try:
+                d = json.loads(path.read_text('utf-8'))
+            except JSONDecodeError:
+                path.write_text(json.dumps({}))
+                d = {}
             s = d.get(text, None)
             return s
 
