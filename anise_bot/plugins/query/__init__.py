@@ -54,7 +54,7 @@ async def _(bot: Bot, e: MessageEvent):
 
 @sv.on_fullmatch(('同步库',))
 async def _(bot: Bot, e: MessageEvent):
-    if Service.SUPERUSER(bot, e):
+    if await Service.SUPERUSER(bot, e):
         await bot.send(e, f'正在从{MAIN_URL}同步库，请稍后...', reply_message=True)
         await update()
         reload_wfm()
@@ -70,7 +70,7 @@ def reload_query():
 
 @sv.on_fullmatch('重载索引')
 async def _(bot: Bot, e: Event):
-    if Service.SUPERUSER(bot, e):
+    if await Service.SUPERUSER(bot, e):
         await bot.send(e, f'{reload_query()} 个索引重载完毕!')
 
 

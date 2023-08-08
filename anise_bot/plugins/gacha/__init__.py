@@ -79,7 +79,7 @@ async def set_pool(bot: Bot, e: GroupMessageEvent):
 
 @sv.on_prefix(('bc卡池',))
 async def bc_pool(bot: Bot, e: GroupMessageEvent):
-    if not Service.SUPERUSER(bot, e):
+    if not await Service.SUPERUSER(bot, e):
         return
     pool_name = utils.normalize_str(e.get_plaintext())
     if pool_name in [x[:-5] for x in os.listdir(GACHA_POOL_CONFIG_PATH)]:
