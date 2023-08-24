@@ -1,5 +1,6 @@
 import hashlib
 import io
+from json import JSONDecodeError
 
 try:
     import ujson as json
@@ -34,7 +35,8 @@ class QuerySet:
 
 class QueryObjects(QuerySet):
 
-    async def search_wfo(self, text: str, main_source: str = None, strict=False) -> tuple[typing.Union[Message, MessageSegment, None], dict]:
+    async def search_wfo(self, text: str, main_source: str = None, strict=False) -> tuple[
+        typing.Union[Message, MessageSegment, None], dict]:
         """角色武器通用 资源查找"""
         params = text.split()
         # res_group = None
@@ -143,7 +145,6 @@ class QueryServerImage(QuerySet):
         self.main_url: str = main_url
         self.cache_timeout: float = 60 * 60 * 24
 
-
     def get_pic_path(self):
         path = RES_PATH / 'query' / 'cache' / f'{Path(self.data.get("url", "")).name}'
         return path
@@ -166,15 +167,15 @@ class QueryServerImage(QuerySet):
         return img
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
-            msg = Message()
-            try:
-                img = await self.get_image()
-                msg += get_send_content('worldflipper.query.success')
-                msg += MessageSegment.image(pic2b64(img))
-            except Exception as ex:
-                logger.exception(ex)
-                return None
-            return msg
+        msg = Message()
+        try:
+            img = await self.get_image()
+            msg += get_send_content('worldflipper.query.success')
+            msg += MessageSegment.image(pic2b64(img))
+        except Exception as ex:
+            logger.exception(ex)
+            return None
+        return msg
 
 
 class QueryServerTable(QuerySet):
@@ -227,7 +228,11 @@ class QueryPartyPage(QuerySet):
         if not path.exists():
             return None
         else:
-            d = json.loads(path.read_text('utf-8'))
+            try:
+                d = json.loads(path.read_text('utf-8'))
+            except JSONDecodeError:
+                path.write_text(json.dumps({}))
+                d = {}
             s = d.get(text, None)
             return s
 
