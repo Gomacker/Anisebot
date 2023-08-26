@@ -1,3 +1,7 @@
+import re
+from collections import defaultdict
+from pathlib import Path
+
 from anise_core import MAIN_URL, DISPLAYED_URL
 from anise_core.worldflipper import wfm, reload_wfm
 from anise_core.worldflipper.utils.update import update
@@ -9,7 +13,7 @@ except ModuleNotFoundError:
     import json
 import time
 
-from nonebot import logger
+from nonebot import logger, on_message
 from nonebot.adapters.onebot.v11 import Bot, Event, Message, MessageEvent
 
 from anise_bot.service import Service
@@ -58,8 +62,24 @@ async def _(bot: Bot, e: MessageEvent):
         await bot.send(e, f'正在从{DISPLAYED_URL}同步库，请稍后...', reply_message=True)
         await update()
         reload_wfm()
-        await bot.send(e, f'同步完毕，{len(wfm.units())} Units and {len(wfm.armaments())} Armament loaded',
-                       reply_message=True)
+        await bot.send(
+            e,
+            f'同步完毕，{len(wfm.units())} Units and {len(wfm.armaments())} Armament loaded',
+            reply_message=True
+        )
+
+
+# @on_message()
+# async def _(bot: Bot, e: MessageEvent):
+#     text = e.get_plaintext().strip()
+#     print(text)
+#     if re.match(r'[a-zA-Z0-9]{6}$', text):
+#         path = Path('party_code_records.json')
+#         if not path.exists():
+#             path.write_text(json.dumps({}), 'utf-8')
+#         d = json.loads(path.read_text('utf-8'))
+#         d = defaultdict(int, d)
+#         d[e.get_plaintext().strip()] += 1
 
 
 def reload_query():

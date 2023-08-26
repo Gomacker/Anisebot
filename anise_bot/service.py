@@ -10,7 +10,7 @@ from collections import defaultdict
 from typing import Callable
 
 import nonebot
-from nonebot import on_startswith, on_notice, logger, on_message, on_request
+from nonebot import on_startswith, on_notice, logger, on_message, on_request, on_regex
 from nonebot import permission as nb_permission
 from nonebot.adapters.onebot.v11 import Bot, GroupMessageEvent, Event, MessageSegment, Message, MessageEvent, \
     GroupRequestEvent, NotifyEvent, GroupBanNoticeEvent, GroupDecreaseNoticeEvent, PrivateMessageEvent
@@ -181,6 +181,22 @@ class Service:
             del kwargs['rule']
         rule = Rule(PackageChecker(*checkers))
         return on_message(rule=rule, **kwargs).handle()
+
+    # def on_regex(self, pattern, **kwargs) -> Callable:
+    #     if isinstance(pattern, str):
+    #         pattern = (pattern,)
+    #     return on_regex(pattern, **kwargs).handle()
+        # checkers = [self._service_checker, _SuffixChecker(pattern)]
+        # if 'rule' in kwargs:
+        #     if isinstance(kwargs['rule'], Rule):
+        #         checkers += [d.call for d in kwargs['rule'].checkers]
+        #     elif isinstance(kwargs['rule'], Callable):
+        #         checkers += [checkers]
+        #     elif isinstance(kwargs['rule'], list):
+        #         checkers += checkers
+        #     del kwargs['rule']
+        # rule = Rule(PackageChecker(*checkers))
+        # return on_message(rule=rule, **kwargs).handle()
 
     def on_fullmatch(self, text, **kwargs) -> Callable:
         if isinstance(text, str):
