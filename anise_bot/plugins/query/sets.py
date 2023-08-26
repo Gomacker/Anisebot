@@ -18,11 +18,12 @@ from PIL import Image
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
 
-from anise_core import MAIN_URL, RES_PATH
+from anise_core import MAIN_URL, RES_PATH, DATA_PATH, DISPLAYED_URL
 from anise_core.worldflipper import wfm, WorldflipperObject, Armament, Unit
 from anise_core.worldflipper.utils.schedule import get_schedule
 from anise_core.worldflipper.utils.wikipage import WikiPageGenerator
 from ...utils import pic2b64, get_send_content
+
 
 
 class QuerySet:
@@ -35,8 +36,7 @@ class QuerySet:
 
 class QueryObjects(QuerySet):
 
-    async def search_wfo(self, text: str, main_source: str = None, strict=False) -> tuple[
-        typing.Union[Message, MessageSegment, None], dict]:
+    async def search_wfo(self, text: str, main_source: str = None, strict=False) -> tuple[typing.Union[Message, MessageSegment, None], dict]:
         """角色武器通用 资源查找"""
         params = text.split()
         # res_group = None
@@ -88,7 +88,7 @@ class QueryObjects(QuerySet):
             #         img = MessageSegment.image(pic2b64(img))
             #         return img, kwargs
             # elif isinstance(target, Unit) or isinstance(target, Armament):
-            if isinstance(target, Unit) or isinstance(target, Armament):
+            # if isinstance(target, Unit) or isinstance(target, Armament):
                 wpg = WikiPageGenerator(target, self.data.get('cache_timeout', 60 * 60 * 24))
                 return MessageSegment.image(pic2b64(await wpg.get())), kwargs
         return None, {}
@@ -140,9 +140,8 @@ class QueryImage(QuerySet):
 
 class QueryServerImage(QuerySet):
 
-    def __init__(self, data: dict, main_url=MAIN_URL):
+    def __init__(self, data: dict):
         super().__init__(data)
-        self.main_url: str = main_url
         self.cache_timeout: float = 60 * 60 * 24
 
     def get_pic_path(self):
@@ -157,7 +156,7 @@ class QueryServerImage(QuerySet):
         if self.is_need_new():
             async with httpx.AsyncClient() as client:
                 url = self.data.get('url', '')
-                r = await client.get(f'{self.main_url.removesuffix("/")}{url}', timeout=30.0)
+                r = await client.get(f'{MAIN_URL.removesuffix("/")}{url}', timeout=30.0)
                 img = Image.open(io.BytesIO(r.content))
                 cache_path = self.get_pic_path()
                 os.makedirs(cache_path.parent, exist_ok=True)
@@ -172,6 +171,7 @@ class QueryServerImage(QuerySet):
             img = await self.get_image()
             msg += get_send_content('worldflipper.query.success')
             msg += MessageSegment.image(pic2b64(img))
+            a = lambda x: x
         except Exception as ex:
             logger.exception(ex)
             return None
@@ -179,9 +179,8 @@ class QueryServerImage(QuerySet):
 
 
 class QueryServerTable(QuerySet):
-    def __init__(self, data: dict, main_url: str = MAIN_URL):
+    def __init__(self, data: dict):
         super().__init__(data)
-        self.main_url: str = main_url
 
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
         msg = Message()
@@ -192,14 +191,14 @@ class QueryServerTable(QuerySet):
         need_cache = not cache_path.exists() or cache_path.stat().st_mtime + cache_timeout < time.time()
         if cache_path.exists() and not need_cache:
             msg += get_send_content('worldflipper.query.success')
-            msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
+            msg += f'{DISPLAYED_URL.removesuffix("/")}/table/{table_id}\n'
             msg += MessageSegment.image(cache_path)
         else:
             from anise_core.worldflipper import playw
             b = await playw.get_browser()
             page = await b.new_page()
             await page.goto(
-                f'{self.main_url.removesuffix("/")}/card/table/?table_id={table_id}&show_replacements=true',
+                f'{MAIN_URL.removesuffix("/")}/card/table/?table_id={table_id}&show_replacements=true',
                 wait_until='networkidle'
             )
             img = await page.locator('.table').screenshot(type='png', omit_background=True)
@@ -208,15 +207,14 @@ class QueryServerTable(QuerySet):
             if need_cache:
                 img.save(cache_path)
             msg += get_send_content('worldflipper.query.success')
-            msg += f'{self.main_url.removesuffix("/")}/table/{table_id}\n'
+            msg += f'{DISPLAYED_URL.removesuffix("/")}/table/{table_id}\n'
             msg += MessageSegment.image(pic2b64(img))
         return msg
 
 
 class QueryPartyPage(QuerySet):
-    def __init__(self, data: dict, main_url: str = MAIN_URL):
+    def __init__(self, data: dict):
         super().__init__(data)
-        self.main_url: str = main_url
 
     @staticmethod
     def hash_path():
@@ -260,10 +258,16 @@ class QueryPartyPage(QuerySet):
     async def get_image(self, text: str, page_index: int) -> Image.Image:
         from anise_core.worldflipper import playw
         b = await playw.get_browser()
-        page = await b.new_page(viewport={'width': 1036, 'height': 120})
-        url = f'{self.main_url.removesuffix("/")}/pure/partySearcher/?q={parse.quote(text)}&page={page_index}'
+        store_path = DATA_PATH / 'state.json'
+        if store_path.exists():
+            context = await b.new_context(storage_state=store_path, viewport={'width': 1036, 'height': 120})
+        else:
+            context = await b.new_context(viewport={'width': 1036, 'height': 120})
+        page = await context.new_page()
+        url = f'{MAIN_URL.removesuffix("/")}/pure/partySearcher/?q={parse.quote(text)}&page={page_index}'
         await page.goto(url, wait_until='networkidle')
         img = await page.screenshot(full_page=True)
+        await page.context.storage_state(path=store_path)
         await page.close()
         img = Image.open(io.BytesIO(img))
         return img
@@ -303,3 +307,45 @@ class QueryPartyPage(QuerySet):
                     return None
             else:
                 return None
+
+
+class QueryPartyRefer(QuerySet):
+
+    async def get_image(self, party_id: str) -> Image.Image | None:
+        try:
+            from anise_core.worldflipper import playw
+            b = await playw.get_browser()
+            store_path = DATA_PATH / 'state.json'
+            if store_path.exists():
+                context = await b.new_context(storage_state=store_path, viewport={'width': 1036, 'height': 120})
+            else:
+                context = await b.new_context(viewport={'width': 1036, 'height': 120})
+            page = await context.new_page()
+            url = f'{MAIN_URL.removesuffix("/")}/card/party_refer/?id={party_id}'
+            await page.goto(url)
+            await page.wait_for_selector('#card-complete')
+            await page.wait_for_load_state('networkidle')
+            if locator := page.locator('#main-card'):
+                img = await locator.screenshot()
+                img = Image.open(io.BytesIO(img))
+            else:
+                img = None
+            await page.context.storage_state(path=store_path)
+            await page.close()
+            return img
+        except:
+            return None
+
+    async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
+        text = text.strip()
+        if re.match(r'[a-zA-Z0-9]{6}$', text):
+            party_id = text
+            img = await self.get_image(party_id)
+            if img:
+                msg = Message()
+                msg += MessageSegment.image(pic2b64(img))
+                return msg
+            else:
+                return None
+        else:
+            return None
