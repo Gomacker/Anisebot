@@ -323,9 +323,12 @@ class QueryPartyRefer(QuerySet):
             page = await context.new_page()
             url = f'{MAIN_URL.removesuffix("/")}/card/party_refer/?id={party_id}'
             await page.goto(url)
+            print('wait card-complete')
             await page.wait_for_selector('#card-complete')
-            await page.wait_for_load_state('networkidle')
-            if locator := page.locator('#main-card'):
+            if await page.query_selector('#main-card'):
+                print('wait networkidle')
+                await page.wait_for_load_state('networkidle')
+                locator = page.locator('#main-card')
                 img = await locator.screenshot()
                 img = Image.open(io.BytesIO(img))
             else:

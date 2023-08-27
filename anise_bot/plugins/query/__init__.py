@@ -2,6 +2,8 @@ import re
 from collections import defaultdict
 from pathlib import Path
 
+import httpx
+
 from anise_core import MAIN_URL, DISPLAYED_URL
 from anise_core.worldflipper import wfm, reload_wfm
 from anise_core.worldflipper.utils.update import update
@@ -69,17 +71,19 @@ async def _(bot: Bot, e: MessageEvent):
         )
 
 
-# @on_message()
-# async def _(bot: Bot, e: MessageEvent):
-#     text = e.get_plaintext().strip()
-#     print(text)
-#     if re.match(r'[a-zA-Z0-9]{6}$', text):
-#         path = Path('party_code_records.json')
-#         if not path.exists():
-#             path.write_text(json.dumps({}), 'utf-8')
-#         d = json.loads(path.read_text('utf-8'))
-#         d = defaultdict(int, d)
-#         d[e.get_plaintext().strip()] += 1
+@on_message().handle()
+async def _(bot: Bot, e: MessageEvent):
+    text = e.get_plaintext().strip()
+    print(text)
+    find = re.findall(r"(?<![a-zA-Z0-9])[a-zA-Z0-9]{6}(?![a-zA-Z0-9])", text)
+    if find:
+        for party_code in find:
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f'{MAIN_URL.removesuffix("/")}/api/v2/worldflipper/api/party/refer',
+                    params={'party_id': party_code},
+                    timeout=10.0
+                )
 
 
 def reload_query():
