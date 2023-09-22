@@ -1,4 +1,10 @@
-from anise_core import MAIN_URL
+import re
+from collections import defaultdict
+from pathlib import Path
+
+import httpx
+
+from anise_core import MAIN_URL, DISPLAYED_URL
 from anise_core.worldflipper import wfm, reload_wfm
 from anise_core.worldflipper.utils.update import update
 from ...utils import get_send_content
@@ -9,7 +15,7 @@ except ModuleNotFoundError:
     import json
 import time
 
-from nonebot import logger
+from nonebot import logger, on_message
 from nonebot.adapters.onebot.v11 import Bot, Event, Message, MessageEvent
 
 from anise_bot.service import Service
@@ -55,11 +61,29 @@ async def _(bot: Bot, e: MessageEvent):
 @sv.on_fullmatch(('同步库',))
 async def _(bot: Bot, e: MessageEvent):
     if await Service.SUPERUSER(bot, e):
-        await bot.send(e, f'正在从{MAIN_URL}同步库，请稍后...', reply_message=True)
+        await bot.send(e, f'正在从{DISPLAYED_URL}同步库，请稍后...', reply_message=True)
         await update()
         reload_wfm()
-        await bot.send(e, f'同步完毕，{len(wfm.units())} Units and {len(wfm.armaments())} Armament loaded',
-                       reply_message=True)
+        await bot.send(
+            e,
+            f'同步完毕，{len(wfm.units())} Units and {len(wfm.armaments())} Armament loaded',
+            reply_message=True
+        )
+
+
+@on_message().handle()
+async def _(bot: Bot, e: MessageEvent):
+    text = e.get_plaintext().strip()
+    print(text)
+    find = re.findall(r"(?<![a-zA-Z0-9])[a-zA-Z0-9]{6}(?![a-zA-Z0-9])", text)
+    if find:
+        for party_code in find:
+            async with httpx.AsyncClient() as client:
+                await client.post(
+                    f'{MAIN_URL.removesuffix("/")}/api/v2/worldflipper/api/party/refer',
+                    params={'party_id': party_code},
+                    timeout=10.0
+                )
 
 
 def reload_query():

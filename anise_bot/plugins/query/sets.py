@@ -35,13 +35,32 @@ class QuerySet:
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
         return None
 
+
 class QueryObjects(QuerySet):
 
-    async def search_wfo(self, text: str, main_source: str = None, strict=False) -> tuple[
-        typing.Union[Message, MessageSegment, None], dict]:
+    async def search_wfo(self, text: str, main_source: str = None, strict=False) -> tuple[typing.Union[Message, MessageSegment, None], dict]:
         """角色武器通用 资源查找"""
         params = text.split()
+        # res_group = None
         kwargs = {}
+        # if params[-1] == 'img':
+        #     extra_param = params[1:]
+        #     awakened = 'a' in extra_param
+        #     if 's212' in extra_param:
+        #         res_group = f'square212x/{"awakened" if awakened else "base"}'
+        #     elif 'fr' in extra_param:
+        #         res_group = f'full_resized/{"awakened" if awakened else "base"}'
+        #     elif 'ps' in extra_param:
+        #         res_group = f'pixelart/special'
+        #     elif 'pf' in extra_param:
+        #         res_group = f'pixelart/walk_front'
+        # elif re.search('觉醒立绘', text):
+        #     text = text.replace('觉醒立绘', '')
+        #     res_group = f'full_resized/awakened'
+        # elif re.search('立绘', text):
+        #     text = text.replace('立绘', '')
+        #     res_group = f'full_resized/base'
+
         search_str: str = params[0]
         target: None = None
         if search_str.startswith('uid') and search_str[3:].isdigit():
@@ -230,10 +249,16 @@ class QueryPartyPage(QuerySet):
     async def get_image(self, text: str, page_index: int) -> Image.Image:
         from anise_core.worldflipper import playw
         b = await playw.get_browser()
-        page = await b.new_page(viewport={'width': 1036, 'height': 120})
-        url = f'{self.main_url.removesuffix("/")}/pure/partySearcher/?q={parse.quote(text)}&page={page_index}'
+        store_path = DATA_PATH / 'state.json'
+        if store_path.exists():
+            context = await b.new_context(storage_state=store_path, viewport={'width': 1036, 'height': 120})
+        else:
+            context = await b.new_context(viewport={'width': 1036, 'height': 120})
+        page = await context.new_page()
+        url = f'{MAIN_URL.removesuffix("/")}/pure/partySearcher/?q={parse.quote(text)}&page={page_index}'
         await page.goto(url, wait_until='networkidle')
         img = await page.screenshot(full_page=True)
+        await page.context.storage_state(path=store_path)
         await page.close()
         img = Image.open(io.BytesIO(img))
         return img
@@ -273,3 +298,48 @@ class QueryPartyPage(QuerySet):
                     return None
             else:
                 return None
+
+
+class QueryPartyRefer(QuerySet):
+
+    async def get_image(self, party_id: str) -> Image.Image | None:
+        try:
+            from anise_core.worldflipper import playw
+            b = await playw.get_browser()
+            store_path = DATA_PATH / 'state.json'
+            if store_path.exists():
+                context = await b.new_context(storage_state=store_path, viewport={'width': 1036, 'height': 120})
+            else:
+                context = await b.new_context(viewport={'width': 1036, 'height': 120})
+            page = await context.new_page()
+            url = f'{MAIN_URL.removesuffix("/")}/card/party_refer/?id={party_id}'
+            await page.goto(url)
+            print('wait card-complete')
+            await page.wait_for_selector('#card-complete')
+            if await page.query_selector('#main-card'):
+                print('wait networkidle')
+                await page.wait_for_load_state('networkidle')
+                locator = page.locator('#main-card')
+                img = await locator.screenshot()
+                img = Image.open(io.BytesIO(img))
+            else:
+                img = None
+            await page.context.storage_state(path=store_path)
+            await page.close()
+            return img
+        except:
+            return None
+
+    async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
+        text = text.strip()
+        if re.match(r'[a-zA-Z0-9]{6}$', text):
+            party_id = text
+            img = await self.get_image(party_id)
+            if img:
+                msg = Message()
+                msg += MessageSegment.image(pic2b64(img))
+                return msg
+            else:
+                return None
+        else:
+            return None

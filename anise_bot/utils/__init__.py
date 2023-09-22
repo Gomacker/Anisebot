@@ -68,7 +68,7 @@ def get_send_content(message_key):
 
 def normalize_str(s) -> str:
     s = unicodedata.normalize('NFKC', s)
-    s = s.lower()
+    # s = s.lower()
     s = zhconv.convert(s, 'zh-hans')
     return s
 

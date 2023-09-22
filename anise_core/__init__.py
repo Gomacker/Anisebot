@@ -10,3 +10,4 @@ CONFIG_PATH = ROOT_PATH.parent / 'config'
 os.makedirs(CONFIG_PATH, exist_ok=True)
 
 MAIN_URL = 'https://meteorhouse.wiki'
+DISPLAYED_URL = MAIN_URL

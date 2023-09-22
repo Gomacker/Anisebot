@@ -1,6 +1,8 @@
 from collections import defaultdict
 from pathlib import Path
 
+from anise_bot.utils import normalize_str
+
 try:
     import ujson as json
 except ModuleNotFoundError:
@@ -120,12 +122,6 @@ class Roster:
         name, score = process.extractOne(name, self._all_name_list)
         return self._roster[name], score, name
 
-
-def normalize_str(s) -> str:
-    s = unicodedata.normalize('NFKC', s)
-    s = s.lower()
-    s = zhconv.convert(s, 'zh-hans')
-    return s
 
 
 if __name__ == '__main__':

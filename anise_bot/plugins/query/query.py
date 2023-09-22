@@ -2,7 +2,7 @@ import typing
 from typing import Union
 
 from .sets import QueryText, QuerySchedule, QueryImage, QueryObjects, QueryServerImage, QueryServerTable, QuerySet, \
-    QueryPartyPage
+    QueryPartyPage, QueryPartyRefer
 from ...utils import get_send_content
 
 try:
@@ -38,6 +38,7 @@ class QueryManager:
         self.register('pps', QueryPartyPage)
         self.register('server_image', QueryServerImage)
         self.register('server_table', QueryServerTable)
+        self.register('party_refer', QueryPartyRefer)
 
         return len(self.query_map)
 
