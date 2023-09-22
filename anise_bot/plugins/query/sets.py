@@ -29,9 +29,11 @@ class QuerySet:
     def __init__(self, data: dict):
         self.data = data
 
+    def hash(self) -> str:
+        return hashlib.md5(json.dumps(self.data).encode()).hexdigest()
+
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
         return None
-
 
 class QueryObjects(QuerySet):
 
@@ -39,26 +41,7 @@ class QueryObjects(QuerySet):
         typing.Union[Message, MessageSegment, None], dict]:
         """角色武器通用 资源查找"""
         params = text.split()
-        # res_group = None
         kwargs = {}
-        # if params[-1] == 'img':
-        #     extra_param = params[1:]
-        #     awakened = 'a' in extra_param
-        #     if 's212' in extra_param:
-        #         res_group = f'square212x/{"awakened" if awakened else "base"}'
-        #     elif 'fr' in extra_param:
-        #         res_group = f'full_resized/{"awakened" if awakened else "base"}'
-        #     elif 'ps' in extra_param:
-        #         res_group = f'pixelart/special'
-        #     elif 'pf' in extra_param:
-        #         res_group = f'pixelart/walk_front'
-        # elif re.search('觉醒立绘', text):
-        #     text = text.replace('觉醒立绘', '')
-        #     res_group = f'full_resized/awakened'
-        # elif re.search('立绘', text):
-        #     text = text.replace('立绘', '')
-        #     res_group = f'full_resized/base'
-
         search_str: str = params[0]
         target: None = None
         if search_str.startswith('uid') and search_str[3:].isdigit():
@@ -75,19 +58,6 @@ class QueryObjects(QuerySet):
             if score == 100 if strict else score > 60:
                 target: WorldflipperObject = wfm.get(uid, main_source)
         if target:
-            # if res_group:
-            #     if res_group in ('pixelart/special', 'pixelart/walk_front'):
-            #         if target.res_exists(res_group, 'gif'):
-            #             img = target.res(res_group, 'gif')
-            #             buf = make_simple_gif_to_byte(img)
-            #             base64_str = base64.b64encode(buf.getvalue()).decode()
-            #             img = MessageSegment.image('base64://' + base64_str)
-            #             return img, kwargs
-            #     elif target.res_exists(res_group):
-            #         img = make_simple_bg(target.res(res_group))
-            #         img = MessageSegment.image(pic2b64(img))
-            #         return img, kwargs
-            # elif isinstance(target, Unit) or isinstance(target, Armament):
             if isinstance(target, Unit) or isinstance(target, Armament):
                 wpg = WikiPageGenerator(target, self.data.get('cache_timeout', 60 * 60 * 24))
                 return MessageSegment.image(pic2b64(await wpg.get())), kwargs

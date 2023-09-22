@@ -1,8 +1,8 @@
 import abc
 from collections import defaultdict
 
-from PIL import Image
-
+from PI import Image
+L
 
 class GameObject:
 
