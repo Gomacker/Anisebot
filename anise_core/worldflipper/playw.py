@@ -1,10 +1,9 @@
-import typing
+from typing import Optional
 
 import playwright
 from playwright.async_api import Browser
 
-_browser: typing.Union[Browser, None] = None
-
+_browser: Optional[Browser] = None
 
 async def init(proxy=None, **kwargs) -> Browser:
     if proxy:

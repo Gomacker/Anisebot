@@ -18,7 +18,7 @@ from PIL import Image
 from nonebot import logger
 from nonebot.adapters.onebot.v11 import Message, MessageSegment
 
-from anise_core import MAIN_URL, RES_PATH
+from anise_core import MAIN_URL, RES_PATH, DATA_PATH
 from anise_core.worldflipper import wfm, WorldflipperObject, Armament, Unit
 from anise_core.worldflipper.utils.schedule import get_schedule
 from anise_core.worldflipper.utils.wikipage import WikiPageGenerator
