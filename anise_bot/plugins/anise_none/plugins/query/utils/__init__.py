@@ -1,5 +1,6 @@
 import abc
 import base64
+import hashlib
 import io
 import time
 from io import BytesIO
@@ -23,13 +24,21 @@ class ImageHandler(abc.ABC):
     async def get(self) -> Optional[Image.Image]:
         pass
 
+    @abc.abstractmethod
+    def key(self) -> str:
+        pass
+
     def __str__(self):
         return f'''{self.__class__.__name__}({", ".join([f"""{k}={f'"{v}"' if isinstance(v, str) else v}""" for k, v in self.__dict__.items()])})'''
 
 
 class ImageHandlerLocalFile(ImageHandler):
+
     def __init__(self, path: Path):
         self.path: Path = path
+
+    def key(self) -> str:
+        pass
 
     async def get(self) -> Optional[Image.Image]:
         if not self.path.exists():
@@ -40,11 +49,36 @@ class ImageHandlerLocalFile(ImageHandler):
             return None
 
 
-class ImageHandlerNetwork(ImageHandler):
+class Cacheable(abc.ABC):
+    @abc.abstractmethod
+    def cache(self):
+        pass
+    @abc.abstractmethod
+    def is_cached(self) -> bool:
+        pass
+
+    @abc.abstractmethod
+    def need_recache(self):
+        pass
+
+
+class ImageHandlerNetwork(ImageHandler, Cacheable):
 
     def __init__(self, url: str, timeout: float = 30.0):
         self.url: str = url
         self.timeout: float = timeout
+
+    def key(self) -> str:
+        return f'Network({self.url})'
+
+    def cache(self):
+        pass
+
+    def is_cached(self) -> bool:
+        pass
+
+    def need_recache(self):
+        pass
 
     async def get(self) -> Optional[Image.Image]:
         if not self.url:
@@ -57,13 +91,25 @@ class ImageHandlerNetwork(ImageHandler):
             return None
 
 
-class ImageHandlerPageScreenshot(ImageHandler):
+class ImageHandlerPageScreenshot(ImageHandler, Cacheable):
 
     def __init__(self, url: str, timeout: float = 30.0, selector: str = '#main-card', **kwargs):
         self.url: str = url
         self.timeout: float = timeout
         self.selector: str = selector
         self.kwargs: dict = kwargs
+
+    def key(self) -> str:
+        return f'PageScreenshot({self.url}, {self.selector})'
+
+    def cache(self):
+        pass
+
+    def is_cached(self) -> bool:
+        pass
+
+    def need_recache(self):
+        pass
 
     async def get(self) -> Optional[Image.Image]:
         try:
@@ -98,6 +144,9 @@ class MessageCard:
             msg += MessageSegment.image(img)
         msg = MessageSegment.text(f'''{self.text}\n{f'(耗时{"%.2f" % (time.time() - start_time)}s)' if start_time else ''}''') + msg
         return msg
+
+    def hash(self) -> object:
+        return hashlib.md5(f'{self.text}{self.image_handler.hash() if self.image_handler else None}').hexdigest()
 
     def __str__(self):
         return f'''MessageCard
