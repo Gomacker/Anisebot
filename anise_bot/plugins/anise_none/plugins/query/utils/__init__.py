@@ -3,6 +3,7 @@ import base64
 import hashlib
 import io
 import time
+import urllib.parse
 from io import BytesIO
 from pathlib import Path
 from typing import Optional, Union
@@ -85,7 +86,7 @@ class ImageHandlerNetwork(ImageHandler, Cacheable):
             return None
         try:
             async with httpx.AsyncClient() as client:
-                r = await client.get(self.url, timeout=self.timeout)
+                r = await client.get(urllib.parse.urljoin('https://meteorhouse.wiki/', self.url), timeout=self.timeout)
                 return Image.open(io.BytesIO(r.content))
         except TimeoutError:
             return None
@@ -117,16 +118,17 @@ class ImageHandlerPageScreenshot(ImageHandler, Cacheable):
                 page = await context.new_page()
                 await page.goto(self.url, wait_until='networkidle')
                 loc = page.locator(self.selector)
+                print(loc)
                 img = await loc.screenshot(type='png', omit_background=True)
             img = Image.open(io.BytesIO(img)).convert('RGBA')
             return img
-        except:
-            return None
+        except Exception as e:
+            raise e
 
 
 def pic2b64(pic: Image.Image) -> str:
     buf = BytesIO()
-    pic.convert('RGBA').save(buf)
+    pic.convert('RGBA').save(buf, format='PNG')
     base64_str = base64.b64encode(buf.getvalue()).decode()
     return 'base64://' + base64_str
 
@@ -139,14 +141,14 @@ class MessageCard:
     async def to_message_onebot11(self, start_time = None) -> "Onebot11Message":
         from nonebot.adapters.onebot.v11 import Message, MessageSegment
         msg = Message()
-        if img := await self.image_handler.get():
+        if self.image_handler and (img := await self.image_handler.get()):
             img = pic2b64(img)
             msg += MessageSegment.image(img)
-        msg = MessageSegment.text(f'''{self.text}\n{f'(耗时{"%.2f" % (time.time() - start_time)}s)' if start_time else ''}''') + msg
+        msg = MessageSegment.text(f'''{self.text} '''+ ('\n' if self.text else '') + f'''{f'(耗时{"%.2f" % (time.time() - start_time)}s)' if start_time else ''}''') + msg
         return msg
 
     def hash(self) -> object:
-        return hashlib.md5(f'{self.text}{self.image_handler.hash() if self.image_handler else None}').hexdigest()
+        return hashlib.md5(f'{self.text}{self.image_handler.key() if self.image_handler else None}').hexdigest()
 
     def __str__(self):
         return f'''MessageCard

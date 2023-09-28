@@ -4,6 +4,7 @@ import json
 import os
 import re
 import time
+import urllib.parse
 from typing import Any, Optional, Type
 
 from nonebot import logger
@@ -12,9 +13,9 @@ from pydantic import BaseModel
 from anise_core import DATA_PATH, RES_PATH
 
 if __name__ == '__main__':
-    from utils import MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork
+    from utils import MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot
 else:
-    from .utils import MessageCard, ImageHandlerLocalFile
+    from .utils import MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot
 
 
 class QueryHandler(BaseModel, abc.ABC):
@@ -52,9 +53,7 @@ class QueryHandlerImage(QueryHandlerRegex):
     src: str = ''
 
     async def get_message(self) -> Optional[MessageCard]:
-        mc = MessageCard()
-        mc.image_handler = ImageHandlerLocalFile(DATA_PATH / self.src)
-        return mc
+        return MessageCard(image_handler=ImageHandlerLocalFile(RES_PATH / 'query' / 'local' / self.src))
 
 
 class QueryHandlerServerImage(QueryHandlerRegex):
@@ -70,12 +69,19 @@ class QueryHandlerServerTable(QueryHandlerRegex):
     table_id: str = ''
 
     async def get_message(self) -> Optional[MessageCard]:
-        mc = MessageCard()
+        ih = ImageHandlerPageScreenshot(
+            f'{"https://meteorhouse.wiki".removesuffix("/")}/card/table/?table_id={self.table_id}&show_replacements=true',
+            selector='.table'
+        )
+        mc = MessageCard(image_handler=ih)
         return mc
 
 
-class QueryHandlerWorldflipperObject(QueryHandlerRegex):
+class QueryHandlerWorldflipperObject(QueryHandler):
     strict: bool = True
+
+    def check(self, text: str) -> bool:
+        return False
 
     async def get_message(self) -> Optional[MessageCard]:
         pass
@@ -156,7 +162,6 @@ class QueryManager:
         self.register(QueryHandlerWorldflipperPurePartySearcher, 'PartySearcher')
         self.register(QueryHandlerWorldflipperPurePartySearcher, 'party_searcher')
 
-
     async def query(self, text: str) -> Optional[MessageCard]:
         t = time.time()
         try:
@@ -193,6 +198,8 @@ if __name__ == '__main__':
         print(mc)
         # for query_handler in qm.query_handlers:
         #     print(query_handler)
+
+
     loop = asyncio.new_event_loop()
     loop.run_until_complete(main())
     asyncio.set_event_loop(loop)

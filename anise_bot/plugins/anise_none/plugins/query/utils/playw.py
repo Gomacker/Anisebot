@@ -30,6 +30,11 @@ class PlaywrightContext:
 
     async def __aenter__(self):
         b = await get_browser(**self.kwargs)
+
+        self.store_path.parent.mkdir(parents=True, exist_ok=True)
+        self.store_path.write_text('{}', encoding='utf-8')
+        print(self.store_path)
+
         try:
             self.context = await b.new_context(storage_state=self.store_path)
         except Exception:
