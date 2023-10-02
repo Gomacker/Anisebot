@@ -9,4 +9,7 @@ os.makedirs(DATA_PATH, exist_ok=True)
 CONFIG_PATH = ROOT_PATH.parent / 'config'
 os.makedirs(CONFIG_PATH, exist_ok=True)
 
-MAIN_URL = 'https://meteorhouse.wiki'
+METEORHOUSE_URL = 'https://meteorhouse.wiki'
+CALENDAR_URL = 'https://wf-calendar.miaowm5.com'
+
+MAIN_URL = METEORHOUSE_URL

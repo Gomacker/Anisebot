@@ -1,17 +1,21 @@
+import json
 import time
 import traceback
 from typing import Awaitable, Callable, Any, Coroutine, Optional
 
-from nonebot import on_message, on_fullmatch
+from nonebot import on_message, on_fullmatch, logger
 from nonebot.adapters.onebot.v11 import (
     Bot as Onebot11Bot,
     MessageEvent as Onebot11MessageEvent,
     GroupMessageEvent as Onebot11GroupMessageEvent
 )
 from nonebot.internal.rule import Rule
+from websockets.legacy.client import WebSocketClientProtocol
 
 from .query import get_query, QueryManager, QueryHandlerWorldflipperPurePartySearcher
 from .utils import MessageCard
+from ...anise.manager import manager
+from ...models.worldflipper import Character
 
 
 class _PrefixChecker:
@@ -29,7 +33,7 @@ class _PrefixChecker:
                 break
         if tmsg:
             start_msg: str = tmsg.data['text']
-            start_msg = start_msg.lower()
+            start_msg = start_msg.lower().strip()
             for p in self.prefix:
                 if start_msg.startswith(p):
                     tmsg.data['text'] = tmsg.data['text'][len(p):]
@@ -46,23 +50,31 @@ class MessageSync:
     def __init__(self):
         self.bot_id: str = 'debug-xxxxxx'
         self.sync_server: str = ''
-        self.ws = None
-        self.uri = 'https://exsample.com/'
+        self.ws: Optional[WebSocketClientProtocol] = None
+        self.uri = 'ws://localhost:14044/bot/sync/ws'
 
     async def connect(self):
         import websockets
         self.ws = await websockets.connect(self.uri)
 
     async def check(self, event: Onebot11MessageEvent, card: MessageCard) -> bool:
-        # if not self.ws:
-        #     await self.connect()
-        #
-        # data = {'message_id': event.message_id, 'user_id': event.user_id}
-        # if isinstance(event, Onebot11GroupMessageEvent):
-        #     data['group_id'] = event.group_id
-        # data['card_hash'] = card.hash()
-        # self.ws
         return True
+        try:
+
+            if not self.ws or self.ws.closed:
+                await self.connect()
+            print(type(self.ws))
+            data = {'message_id': event.message_id, 'user_id': event.user_id}
+            if isinstance(event, Onebot11GroupMessageEvent):
+                data['group_id'] = event.group_id
+            data['card_hash'] = card.hash()
+            await self.ws.send(json.dumps(data))
+            msg: dict = json.loads(await self.ws.recv())
+            print(f'Received {msg}')
+            return msg.get('accept', False)
+        except:
+            logger.error('连接至同步服务器失败，已自动通过消息处理过滤')
+            return True
 
 
 msync = MessageSync()
@@ -70,7 +82,8 @@ msync = MessageSync()
 # on_query = on_message(rule=Rule(_PrefixChecker(('qr', '/qr', '查询', '/'))))
 on_query = on_message(rule=Rule(_PrefixChecker(('tq', 'tqr'))))
 # on_party_query = on_message(rule=Rule(_PrefixChecker(('pqr', '/pqr', '查盘', '茶盘', '#'))))
-on_party_query = on_message(rule=Rule(_PrefixChecker(tuple())))
+on_party_query = on_message(rule=Rule(_PrefixChecker(('tpqr',))))
+on_query_refresh = on_fullmatch(('t刷新索引', 't重载索引'))
 
 
 async def do_query(bot: Onebot11Bot, event: Onebot11MessageEvent, query_manager: QueryManager):
@@ -105,3 +118,20 @@ PQR_QM.query_handlers = [QueryHandlerWorldflipperPurePartySearcher(**{'type': 'p
 @on_party_query.handle()
 async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
     await do_query(bot, event, PQR_QM)
+
+
+@on_query_refresh.handle()
+async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
+    qm = get_query()
+    ql = qm.init()
+    await bot.send(event, f'已加载 {ql} 个Query索引！')
+
+
+on_test = on_message(rule=_PrefixChecker(('obt',)))
+
+
+@on_test.handle()
+async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
+    text = event.get_plaintext()
+    c = manager.get(Character, text)
+    print(c)

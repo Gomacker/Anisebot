@@ -38,7 +38,8 @@ class QuerySet:
 
 class QueryObjects(QuerySet):
 
-    async def search_wfo(self, text: str, main_source: str = None, strict=False) -> tuple[typing.Union[Message, MessageSegment, None], dict]:
+    async def search_wfo(self, text: str, main_source: str = None, strict=False) -> tuple[
+        typing.Union[Message, MessageSegment, None], dict]:
         """角色武器通用 资源查找"""
         params = text.split()
         # res_group = None
@@ -108,10 +109,23 @@ class QueryText(QuerySet):
 
 class QuerySchedule(QuerySet):
 
+    def get_pic_path(self):
+        return RES_PATH / 'query' / 'schedule.png'
+
+    def is_need_new(self) -> bool:
+        cache_path = self.get_pic_path()
+        return not cache_path.exists() or cache_path.stat().st_mtime + 60 * 60 * 24 < time.time()
+
     async def get_message(self, text: str) -> typing.Union[Message, MessageSegment, None]:
         msg = Message()
         msg += MessageSegment.text('今日日程：\n')
-        msg += MessageSegment.image(pic2b64(await get_schedule()))
+        if self.is_need_new():
+            img = await get_schedule()
+            img.save(self.get_pic_path())
+        else:
+            img = Image.open(self.get_pic_path())
+
+        msg += MessageSegment.image(pic2b64(img))
         return msg
 
 

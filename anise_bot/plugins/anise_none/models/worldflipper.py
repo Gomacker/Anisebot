@@ -1,10 +1,13 @@
+import json
 import urllib.parse
 from enum import Enum
+from pathlib import Path
 from typing import Optional
 
 from pydantic import BaseModel
 
-from anise_core import MAIN_URL
+from anise_core import MAIN_URL, DATA_PATH
+from ..anise.manager import manager
 from ..anise.object import GameObject
 from ..anise.resource import ResourceTypeImage, ResourceGroupNetwork, ResourceGroupLocal
 
@@ -138,5 +141,21 @@ class Equipment(GameObject):
 
     server: Optional[str] = None
 
-class Union():
-    pass
+
+def load_from_json(path: Path, type_: type[GameObject]):
+    manager.register_type(type_)
+    data: dict = json.loads(path.read_text('utf-8'))
+    for id_, item_data in data.items():
+        obj = type_.parse_obj({'id': id_, **item_data})
+        manager.register(id_, obj)
+
+
+def load_all():
+    character_path = DATA_PATH / 'object' / 'os' / 'character.json'
+    equipment_path = DATA_PATH / 'object' / 'os' / 'equipment.json'
+
+    load_from_json(character_path, Character)
+    load_from_json(equipment_path, Equipment)
+
+
+load_all()
