@@ -1,4 +1,0 @@
-update = false
-
-[query]
-config_url = 'https://meteorhouse.wiki/static/temp/config.json'
