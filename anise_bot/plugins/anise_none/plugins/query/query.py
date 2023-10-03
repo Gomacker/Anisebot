@@ -211,6 +211,27 @@ class QueryHandlerWorldflipperObject(QueryHandler):
 
 
 class QueryHandlerWorldflipperScheduler(QueryHandlerRegex):
+
+    class ImageHandlerScheduler(ImageHandler):
+
+        def key(self) -> str:
+            return f'Scheduler({self.url}, {self.selector})'
+        async def get(self) -> Optional[Image.Image]:
+            try:
+                if await self.need_recache() or not self.is_cached():
+                    async with PlaywrightContext(**self.kwargs) as context:
+                        page = await context.new_page()
+                        await page.goto(self.url, wait_until='networkidle')
+                        loc = page.locator(self.selector)
+                        img = await loc.screenshot(type='png', omit_background=True)
+                    img = Image.open(io.BytesIO(img)).convert('RGBA')
+                    self.cache(await self.to_io(img))
+                    return img
+                else:
+                    img = Image.open(self.cache_path_getter(self))
+                    return img
+            except Exception as e:
+                raise e
     async def get_message(self, check_result: Any) -> Optional[MessageCard]:
         return MessageCard(
             image_handler=urllib.parse.urljoin(
