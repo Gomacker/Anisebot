@@ -13,16 +13,15 @@ from typing import Any, Optional, Type, Union
 import httpx
 from PIL import Image
 from nonebot import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
-from anise_bot.plugins.anise_none.models.worldflipper import Equipment, Character
-from ...anise.config import METEORHOUSE_URL
-from ...anise.object import GameObject
-from ...anise.query.alias import alias_manager
-from anise_core import DATA_PATH, RES_PATH
-
-from .utils import MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot, \
+from ...models.worldflipper import Equipment, Character
+from .utils import (
+    MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot,
     ImageHandlerPostProcessor, ImageHandler, PlaywrightContext
+)
+from ...anise.config import METEORHOUSE_URL, RES_PATH
+from ...anise.query.alias import alias_manager
 
 
 class QueryHandler(BaseModel, abc.ABC):
@@ -211,11 +210,11 @@ class QueryHandlerWorldflipperObject(QueryHandler):
 
 
 class QueryHandlerWorldflipperScheduler(QueryHandlerRegex):
-
     class ImageHandlerScheduler(ImageHandler):
 
         def key(self) -> str:
             return f'Scheduler({self.url}, {self.selector})'
+
         async def get(self) -> Optional[Image.Image]:
             try:
                 if await self.need_recache() or not self.is_cached():
@@ -232,6 +231,7 @@ class QueryHandlerWorldflipperScheduler(QueryHandlerRegex):
                     return img
             except Exception as e:
                 raise e
+
     async def get_message(self, check_result: Any) -> Optional[MessageCard]:
         return MessageCard(
             image_handler=urllib.parse.urljoin(

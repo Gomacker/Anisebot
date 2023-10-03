@@ -6,9 +6,9 @@ from pygtrie import CharTrie, Trie
 from pypinyin import lazy_pinyin
 from fuzzywuzzy import process
 
-from anise_bot.plugins.anise_none.anise.manager import manager
-from anise_bot.plugins.anise_none.models.worldflipper import Character, Equipment
-from anise_core import RES_PATH
+from ..manager import manager
+from ...models.worldflipper import Character, Equipment
+from ..config import RES_PATH
 from ..object import GameObject
 
 

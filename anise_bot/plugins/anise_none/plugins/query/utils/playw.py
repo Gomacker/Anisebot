@@ -3,8 +3,7 @@ from typing import Optional
 import playwright
 from playwright.async_api import Browser, BrowserContext
 
-from anise_core import DATA_PATH
-
+from ....anise.config import DATA_PATH
 
 _browser: Optional[Browser] = None
 
@@ -45,6 +44,7 @@ class PlaywrightContext:
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.context.storage_state(path=self.store_path)
         await self.context.close()
+
 
 async def del_browser():
     del _browser

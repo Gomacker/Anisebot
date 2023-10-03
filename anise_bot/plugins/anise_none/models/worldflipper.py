@@ -6,7 +6,7 @@ from typing import Optional
 
 from pydantic import BaseModel
 
-from anise_core import MAIN_URL, DATA_PATH
+from ..anise.config import MAIN_URL, DATA_PATH
 from ..anise.manager import manager
 from ..anise.object import GameObject
 from ..anise.resource import ResourceTypeImage, ResourceGroupNetwork, ResourceGroupLocal

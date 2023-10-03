@@ -14,6 +14,7 @@ from websockets.legacy.client import WebSocketClientProtocol
 
 from .query import get_query, QueryManager, QueryHandlerWorldflipperPurePartySearcher
 from .utils import MessageCard
+from ... import config
 from ...anise.manager import manager
 from ...models.worldflipper import Character
 
@@ -41,6 +42,12 @@ class _PrefixChecker:
         return False
 
 
+async def whitelist_checker(event: Onebot11MessageEvent) -> bool:
+    if config.whitelist and isinstance(event, Onebot11GroupMessageEvent):
+        return event.group_id in config.whitelist
+    return True
+
+
 class MessageSync:
     """
     同步分布式Bot的消息，去掉不必要的重复回复
@@ -51,7 +58,7 @@ class MessageSync:
         self.bot_id: str = 'debug-xxxxxx'
         self.sync_server: str = ''
         self.ws: Optional[WebSocketClientProtocol] = None
-        self.uri = 'ws://localhost:14044/bot/sync/ws'
+        self.uri = 'ws://meteorhouse.wiki/bot/sync/ws'
 
     async def connect(self):
         import websockets
@@ -59,31 +66,30 @@ class MessageSync:
 
     async def check(self, event: Onebot11MessageEvent, card: MessageCard) -> bool:
         return True
-        try:
-
-            if not self.ws or self.ws.closed:
-                await self.connect()
-            print(type(self.ws))
-            data = {'message_id': event.message_id, 'user_id': event.user_id}
-            if isinstance(event, Onebot11GroupMessageEvent):
-                data['group_id'] = event.group_id
-            data['card_hash'] = card.hash()
-            await self.ws.send(json.dumps(data))
-            msg: dict = json.loads(await self.ws.recv())
-            print(f'Received {msg}')
-            return msg.get('accept', False)
-        except:
-            logger.error('连接至同步服务器失败，已自动通过消息处理过滤')
-            return True
+        # try:
+        #     if not self.ws or self.ws.closed:
+        #         await self.connect()
+        #     print(type(self.ws))
+        #     data = {'message_id': event.message_id, 'user_id': event.user_id}
+        #     if isinstance(event, Onebot11GroupMessageEvent):
+        #         data['group_id'] = event.group_id
+        #     data['card_hash'] = card.hash()
+        #     await self.ws.send(json.dumps(data))
+        #     msg: dict = json.loads(await self.ws.recv())
+        #     print(f'Received {msg}')
+        #     return msg.get('accept', False)
+        # except:
+        #     logger.error('连接至同步服务器失败，已自动通过消息处理过滤')
+        #     return True
 
 
 msync = MessageSync()
 
 # on_query = on_message(rule=Rule(_PrefixChecker(('qr', '/qr', '查询', '/'))))
-on_query = on_message(rule=Rule(_PrefixChecker(('tq', 'tqr'))))
+on_query = on_message(rule=Rule(_PrefixChecker(('tq', 'tqr')), whitelist_checker))
 # on_party_query = on_message(rule=Rule(_PrefixChecker(('pqr', '/pqr', '查盘', '茶盘', '#'))))
-on_party_query = on_message(rule=Rule(_PrefixChecker(('tpqr',))))
-on_query_refresh = on_fullmatch(('t刷新索引', 't重载索引'))
+on_party_query = on_message(rule=Rule(_PrefixChecker(('tpqr',)), whitelist_checker))
+on_query_refresh = on_fullmatch(('t刷新索引', 't重载索引'), rule=Rule(whitelist_checker))
 
 
 async def do_query(bot: Onebot11Bot, event: Onebot11MessageEvent, query_manager: QueryManager):
