@@ -75,8 +75,9 @@ class Cacheable(abc.ABC):
 
 class BasicTimerCache(Cacheable):
 
-    def __init__(self, cache_path_getter: Optional[Callable[["BasicTimerCache"], Path]]):
+    def __init__(self, cache_path_getter: Optional[Callable[["BasicTimerCache"], Path]], cache_timeout):
         self.cache_path_getter = cache_path_getter
+        self.cache_timeout = cache_timeout
 
     def cache(self, obj: io.BytesIO):
         if self.cache_path_getter:
@@ -92,8 +93,9 @@ class BasicTimerCache(Cacheable):
     async def need_recache(self):
         if self.cache_path_getter:
             cache_path = Path(self.cache_path_getter(self))
-            cache_timeout = 60 * 60 * 24
-            return not cache_path.exists() or cache_path.stat().st_mtime + cache_timeout < time.time()
+            if self.cache_timeout < 0:
+                return False
+            return not cache_path.exists() or cache_path.stat().st_mtime + self.cache_timeout < time.time()
         return False
 
 
@@ -101,8 +103,10 @@ class ImageHandlerNetwork(ImageHandler, BasicTimerCache):
 
     def __init__(
             self, url: str, timeout: float = 30.0,
-            cache_path_getter: Optional[Callable[["ImageHandlerNetwork"], Path]] = None):
-        super().__init__(cache_path_getter)
+            cache_path_getter: Optional[Callable[["ImageHandlerNetwork"], Path]] = None,
+            cache_timeout: int = 60 * 60 * 24
+    ):
+        super().__init__(cache_path_getter, cache_timeout)
         self.url: str = url
         self.timeout: float = timeout
         self.content_type: str = 'image/png'
@@ -149,9 +153,10 @@ class ImageHandlerPageScreenshot(ImageHandler, BasicTimerCache):
             timeout: float = 30.0,
             selector: str = 'body',
             cache_path_getter: Optional[Callable[["ImageHandlerPageScreenshot"], Path]] = None,
+            cache_timeout: int = 60 * 60 * 24,
             **kwargs
     ):
-        super().__init__(cache_path_getter)
+        super().__init__(cache_path_getter, cache_timeout)
         self.url: str = url
         self.timeout: float = timeout
         self.selector: str = selector

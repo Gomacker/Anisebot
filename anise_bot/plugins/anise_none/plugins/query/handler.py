@@ -16,15 +16,18 @@ from .query import get_query, QueryManager, QueryHandlerWorldflipperPurePartySea
 from .utils import MessageCard
 from ... import config
 from ...anise import config as anise_config
-from ...anise.manager import manager
-from ...models.worldflipper import Character
+
+
+async def soft_to_me_checker(event: Onebot11MessageEvent):
+    print([m for m in event.message])
+    return True
 
 
 class _PrefixChecker:
     def __init__(self, prefix):
         if isinstance(prefix, str):
             prefix = (prefix,)
-        self.prefix: list[str] = [x.lower() for x in sorted(list(prefix), key=lambda x: len(x), reverse=True)]
+        self.prefix: list[str] = [x.lower() for x in sorted(list(set(prefix)), key=lambda x: len(x), reverse=True)]
 
     async def __call__(self, event: Onebot11MessageEvent) -> bool:
         msg = event.get_message()
@@ -117,7 +120,7 @@ async def temp_silent(event: Onebot11MessageEvent):
     return True
 
 
-basic_checkers = package_checkers(whitelist_checker, temp_silent)
+basic_checkers = package_checkers(whitelist_checker, temp_silent, soft_to_me_checker)
 
 on_query = on_message(rule=Rule(_PrefixChecker(anise_config.config.query.query_prefixes), basic_checkers))
 on_party_query = on_message(rule=Rule(_PrefixChecker(anise_config.config.query.worldflipper_party_query_prefixes), basic_checkers))
