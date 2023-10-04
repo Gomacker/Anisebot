@@ -7,7 +7,8 @@ from nonebot import on_message, on_fullmatch, logger
 from nonebot.adapters.onebot.v11 import (
     Bot as Onebot11Bot,
     MessageEvent as Onebot11MessageEvent,
-    GroupMessageEvent as Onebot11GroupMessageEvent
+    GroupMessageEvent as Onebot11GroupMessageEvent,
+    MessageSegment as Onebot11MessageSegment
 )
 from nonebot.internal.rule import Rule
 from websockets.legacy.client import WebSocketClientProtocol
@@ -19,8 +20,9 @@ from ...anise import config as anise_config
 
 
 async def soft_to_me_checker(event: Onebot11MessageEvent):
-    print([m for m in event.message])
-    return True
+    def is_at_or_reply_other(segment: Onebot11MessageSegment):
+        return (event.reply and event.reply.sender.user_id != event.self_id) or (segment.type == 'at' and segment.data['qq'] != event.self_id)
+    return not any(filter(is_at_or_reply_other, [m for m in event.message]))
 
 
 class _PrefixChecker:
