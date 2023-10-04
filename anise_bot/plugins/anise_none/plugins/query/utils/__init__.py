@@ -199,10 +199,11 @@ class ImageHandlerPostProcessor(ImageHandler):
 
 
 class MessageCard:
-    def __init__(self, text='', image_handler=None):
+    def __init__(self, text='', image_handler=None, exception=''):
         self.text: str = text
         self.image_handler: Optional[ImageHandler] = image_handler
         self.kwargs: dict = {}
+        self.exception: str = exception
 
     def get_message_precontent(self, id_: str):
         c = config.message_contents.get(id_)
@@ -232,6 +233,8 @@ class MessageCard:
             content += f'(耗时{"%.2f" % (time.time() - start_time)}s)'
         if self.text:
             content += f'\n{self.text}'
+        if self.exception:
+            content += f'\n{self.exception}'
 
         msg = MessageSegment.text(content) + msg
         return msg

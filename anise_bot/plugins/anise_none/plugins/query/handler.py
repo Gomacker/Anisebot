@@ -140,7 +140,7 @@ async def do_query(bot: Onebot11Bot, event: Onebot11MessageEvent, query_manager:
         try:
             msg = await mc.to_message_onebot11(start_time=t)
         except Exception as e:
-            exc = MessageCard(text=f'发生了错误: {e.__class__}')
+            exc = MessageCard(exception=f'发生了错误: {e.__class__}')
             traceback.print_exception(e)
             msg = await exc.to_message_onebot11(start_time=t)
         await bot.send(event, msg, reply_message=True)

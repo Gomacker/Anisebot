@@ -20,7 +20,7 @@ from .utils import (
     MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot,
     ImageHandlerPostProcessor, ImageHandler, PlaywrightContext
 )
-from ...anise.config import METEORHOUSE_URL, RES_PATH
+from ...anise.config import METEORHOUSE_URL, RES_PATH, CALENDAR_URL
 from ...anise.query.alias import alias_manager
 
 
@@ -216,8 +216,8 @@ class QueryHandlerWorldflipperObject(QueryHandler):
 
 
 class QueryHandlerWorldflipperScheduler(QueryHandlerRegex):
-    class ImageHandlerScheduler(ImageHandler):
-
+    class ImageHandlerScheduler(ImageHandlerPageScreenshot):
+        """这是一个临时用的日程抓取器，在正式版本中在Meteorhouse重写"""
         def key(self) -> str:
             return f'Scheduler({self.url}, {self.selector})'
 
@@ -226,7 +226,9 @@ class QueryHandlerWorldflipperScheduler(QueryHandlerRegex):
                 if await self.need_recache() or not self.is_cached():
                     async with PlaywrightContext(**self.kwargs) as context:
                         page = await context.new_page()
-                        await page.goto(self.url, wait_until='networkidle')
+                        await page.goto(self.url, wait_until='load')
+                        await page.click('body', position={'x': 440, 'y': 195})
+                        await page.wait_for_load_state(state='networkidle', timeout=600000)
                         loc = page.locator(self.selector)
                         img = await loc.screenshot(type='png', omit_background=True)
                     img = Image.open(io.BytesIO(img)).convert('RGBA')
@@ -240,9 +242,9 @@ class QueryHandlerWorldflipperScheduler(QueryHandlerRegex):
 
     async def get_message(self, check_result: Any) -> Optional[MessageCard]:
         return MessageCard(
-            image_handler=urllib.parse.urljoin(
-                METEORHOUSE_URL,
-                f'/static/worldflipper/unit/pixelart/walk_front/{check_result.obj.resource_id}.gif'
+            image_handler=QueryHandlerWorldflipperScheduler.ImageHandlerScheduler(
+                CALENDAR_URL,
+                cache_path_getter=lambda x: RES_PATH / 'query' / 'cache' / 'calendar.png'
             )
         )
 
