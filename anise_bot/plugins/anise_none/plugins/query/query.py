@@ -78,11 +78,17 @@ class QueryHandlerServerTable(QueryHandlerRegex):
 
     async def get_message(self, check_result: Any) -> Optional[MessageCard]:
         ih = ImageHandlerPageScreenshot(
-            f'{"https://meteorhouse.wiki".removesuffix("/")}/card/table/?table_id={self.table_id}&show_replacements=true',
+            urllib.parse.urljoin(
+                METEORHOUSE_URL,
+                f'/card/table/?table_id={urllib.parse.quote(self.table_id)}&show_replacements=true'
+            ),
             selector='.table',
             cache_path_getter=lambda x: RES_PATH / 'query' / 'cache' / 'table' / f'{self.table_id}.png'
         )
-        return MessageCard(image_handler=ih)
+        return MessageCard(
+            text=urllib.parse.urljoin(METEORHOUSE_URL, f'/table/{urllib.parse.quote(self.table_id)}'),
+            image_handler=ih
+        )
 
 
 class EnumObjectResType(enum.Enum):
