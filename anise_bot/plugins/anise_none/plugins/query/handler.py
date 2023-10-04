@@ -79,7 +79,9 @@ class MessageSync:
         self.ws = await websockets.connect(self.uri)
 
     async def check(self, event: Onebot11MessageEvent, card: MessageCard) -> bool:
-        if self.failed_count >= self.failed_max and not (time.time() > self.retry_time):
+        if self.failed_count >= self.failed_max:
+            if time.time() < self.retry_time:
+                self.failed_count = 0
             return True
 
         try:

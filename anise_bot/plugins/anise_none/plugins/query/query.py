@@ -15,13 +15,13 @@ from PIL import Image
 from nonebot import logger
 from pydantic import BaseModel
 
-from ...models.worldflipper import Equipment, Character
 from .utils import (
     MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot,
-    ImageHandlerPostProcessor, ImageHandler, PlaywrightContext
+    ImageHandlerPostProcessor, PlaywrightContext
 )
 from ...anise.config import METEORHOUSE_URL, RES_PATH, CALENDAR_URL
 from ...anise.query.alias import alias_manager
+from ...models.worldflipper import Equipment, Character
 
 
 class QueryHandler(BaseModel, abc.ABC):

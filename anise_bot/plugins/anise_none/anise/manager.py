@@ -31,5 +31,9 @@ class ManagerBase:
         except:
             return None
 
+    def dict_of(self, type_: T) -> Optional[dict[str, T]]:
+        assert issubclass(type_, GameObject)
+        return self.objects.get(type_.type_id())
+
 
 manager = ManagerBase()
