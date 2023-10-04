@@ -15,6 +15,7 @@ from websockets.legacy.client import WebSocketClientProtocol
 from .query import get_query, QueryManager, QueryHandlerWorldflipperPurePartySearcher
 from .utils import MessageCard
 from ... import config
+from ...anise import config as anise_config
 from ...anise.manager import manager
 from ...models.worldflipper import Character
 
@@ -107,16 +108,19 @@ def package_checkers(*checkers: Callable[[Onebot11MessageEvent], Awaitable[bool]
     return deco
 
 
+silent_list = set()
+
+
 async def temp_silent(event: Onebot11MessageEvent):
+    if isinstance(event, Onebot11GroupMessageEvent):
+        return event.group_id not in silent_list
     return True
 
 
 basic_checkers = package_checkers(whitelist_checker, temp_silent)
 
-on_query = on_message(rule=Rule(_PrefixChecker(('qr', '/qr', '查询', '/')), basic_checkers))
-# on_query = on_message(rule=Rule(_PrefixChecker(('tq', 'tqr')), basic_checkers))
-on_party_query = on_message(rule=Rule(_PrefixChecker(('pqr', '/pqr', '查盘', '茶盘', '#')), basic_checkers))
-# on_party_query = on_message(rule=Rule(_PrefixChecker(('tpqr',)), basic_checkers))
+on_query = on_message(rule=Rule(_PrefixChecker(anise_config.config.query.query_prefixes), basic_checkers))
+on_party_query = on_message(rule=Rule(_PrefixChecker(anise_config.config.query.worldflipper_party_query_prefixes), basic_checkers))
 on_query_refresh = on_fullmatch(('t刷新索引', 't重载索引'), rule=Rule(basic_checkers))
 
 
@@ -159,11 +163,12 @@ async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
     await bot.send(event, f'已加载 {ql} 个Query索引！')
 
 
-on_test = on_message(rule=_PrefixChecker(('obt',)))
+on_test = on_message(rule=_PrefixChecker(('静音',)), )
 
 
 @on_test.handle()
-async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
-    text = event.get_plaintext()
-    c = manager.get(Character, text)
-    print(c)
+async def _(bot: Onebot11Bot, event: Onebot11GroupMessageEvent):
+    if event.to_me:
+        silent_list.add(event.group_id)
+
+    await bot.send(event, '已静音')
