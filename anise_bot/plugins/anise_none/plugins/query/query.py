@@ -425,6 +425,7 @@ def get_query() -> QueryManager:
         _QM.init()
     return _QM
 
+get_query()
 
 if __name__ == '__main__':
     async def main():

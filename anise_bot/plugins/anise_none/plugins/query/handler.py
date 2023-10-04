@@ -60,45 +60,71 @@ class MessageSync:
         self.ws: Optional[WebSocketClientProtocol] = None
         self.uri = 'ws://meteorhouse.wiki/bot/sync/ws'
 
+        self.failed_count = 0
+        self.failed_max = 3
+        self.retry_cooldown = 60 * 30
+        self.retry_time = 0
+
     async def connect(self):
         import websockets
         self.ws = await websockets.connect(self.uri)
 
     async def check(self, event: Onebot11MessageEvent, card: MessageCard) -> bool:
-        return True
-        # try:
-        #     if not self.ws or self.ws.closed:
-        #         await self.connect()
-        #     print(type(self.ws))
-        #     data = {'message_id': event.message_id, 'user_id': event.user_id}
-        #     if isinstance(event, Onebot11GroupMessageEvent):
-        #         data['group_id'] = event.group_id
-        #     data['card_hash'] = card.hash()
-        #     await self.ws.send(json.dumps(data))
-        #     msg: dict = json.loads(await self.ws.recv())
-        #     print(f'Received {msg}')
-        #     return msg.get('accept', False)
-        # except:
-        #     logger.error('连接至同步服务器失败，已自动通过消息处理过滤')
-        #     return True
+        if self.failed_count >= self.failed_max and not (time.time() > self.retry_time):
+            return True
+
+        try:
+            if not self.ws or self.ws.closed:
+                await self.connect()
+            print(type(self.ws))
+            data = {'message_id': event.message_id, 'user_id': event.user_id}
+            if isinstance(event, Onebot11GroupMessageEvent):
+                data['group_id'] = event.group_id
+            data['card_hash'] = card.hash()
+            await self.ws.send(json.dumps(data))
+            msg: dict = json.loads(await self.ws.recv())
+            print(f'Received {msg}')
+            return msg.get('accept', False)
+        except:
+            self.failed_count += 1
+            self.retry_time = time.time() + self.retry_cooldown
+            logger.error('连接至同步服务器失败，已自动通过消息处理过滤')
+            return True
 
 
 msync = MessageSync()
 
-# on_query = on_message(rule=Rule(_PrefixChecker(('qr', '/qr', '查询', '/'))))
-on_query = on_message(rule=Rule(_PrefixChecker(('tq', 'tqr')), whitelist_checker))
-# on_party_query = on_message(rule=Rule(_PrefixChecker(('pqr', '/pqr', '查盘', '茶盘', '#'))))
-on_party_query = on_message(rule=Rule(_PrefixChecker(('tpqr',)), whitelist_checker))
-on_query_refresh = on_fullmatch(('t刷新索引', 't重载索引'), rule=Rule(whitelist_checker))
+
+def package_checkers(*checkers: Callable[[Onebot11MessageEvent], Awaitable[bool]]):
+    async def deco(event: Onebot11MessageEvent):
+        for checker in checkers:
+            result = await checker(event)
+            # print(result)
+            if not result:
+                return False
+        return True
+
+    return deco
+
+
+async def temp_silent(event: Onebot11MessageEvent):
+    return True
+
+
+basic_checkers = package_checkers(whitelist_checker, temp_silent)
+
+on_query = on_message(rule=Rule(_PrefixChecker(('qr', '/qr', '查询', '/')), basic_checkers))
+# on_query = on_message(rule=Rule(_PrefixChecker(('tq', 'tqr')), basic_checkers))
+on_party_query = on_message(rule=Rule(_PrefixChecker(('pqr', '/pqr', '查盘', '茶盘', '#')), basic_checkers))
+# on_party_query = on_message(rule=Rule(_PrefixChecker(('tpqr',)), basic_checkers))
+on_query_refresh = on_fullmatch(('t刷新索引', 't重载索引'), rule=Rule(basic_checkers))
 
 
 async def do_query(bot: Onebot11Bot, event: Onebot11MessageEvent, query_manager: QueryManager):
     t = time.time()
     mc = await query_manager.query(event.get_plaintext())
     if not mc:
-        mc = MessageCard(
-            text='// TODO 我是未查找到相关内容但是utils那边还没迁移过来先在这弄个占位符不过是不是写太多了不像占位符了'
-        )
+        mc = MessageCard()
         await bot.send(event, await mc.to_message_onebot11(start_time=t), reply_message=True)
         return
     if await msync.check(event, mc):

@@ -2,6 +2,7 @@ import abc
 import base64
 import hashlib
 import io
+import random
 import time
 import urllib.parse
 from io import BytesIO
@@ -11,6 +12,7 @@ from typing import Optional, Union, Callable, Any
 import httpx
 from PIL import Image, UnidentifiedImageError, ImageSequence
 
+from anise_bot.plugins.anise_none.anise import config
 from anise_bot.plugins.anise_none.anise.config import METEORHOUSE_URL
 from . import playw
 from .playw import PlaywrightContext
@@ -19,33 +21,6 @@ try:
     from nonebot.adapters.onebot.v11 import Message as Onebot11Message
 except ModuleNotFoundError:
     pass
-
-
-def make_simple_gif_to_byte(img: Image.Image) -> io.BytesIO:
-    frames = list()
-    durations = list()
-    bg: Image.Image = Image.new('RGBA', img.size, (240, 240, 240))
-    for frame in ImageSequence.all_frames(img):
-        f_canvas = Image.new('RGBA', bg.size)
-        f_canvas.paste(bg)
-        temp = Image.new('RGBA', img.size)
-        temp.paste(frame)
-        f_canvas.paste(temp, (0, 0), mask=temp)
-        frames.append(f_canvas)
-        durations.append(frame.info['duration'])
-    buf = io.BytesIO()
-    frames[0].save(
-        buf, format='GIF', save_all=True, loop=0,
-        duration=durations, disposal=2, append_images=frames[1:]
-    )
-    return buf
-
-
-def pic2b64(pic: Image.Image, format_: str = 'PNG') -> str:
-    buf = BytesIO()
-    pic.convert('RGBA').save(buf, format=format_)
-    base64_str = base64.b64encode(buf.getvalue()).decode()
-    return 'base64://' + base64_str
 
 
 class ImageHandler(abc.ABC):
@@ -168,7 +143,6 @@ class ImageHandlerNetwork(ImageHandler, BasicTimerCache):
 
 
 class ImageHandlerPageScreenshot(ImageHandler, BasicTimerCache):
-
     def __init__(
             self,
             url: str,
@@ -223,16 +197,38 @@ class MessageCard:
     def __init__(self, text='', image_handler=None):
         self.text: str = text
         self.image_handler: Optional[ImageHandler] = image_handler
+        self.kwargs: dict = {}
+
+    def get_message_precontent(self, id_: str):
+        c = config.message_contents.get(id_)
+        if isinstance(c, list):
+            return random.choice(c)
+        else:
+            return str(c)
 
     async def to_message_onebot11(self, start_time=None) -> "Onebot11Message":
         from nonebot.adapters.onebot.v11 import Message, MessageSegment
         msg = Message()
         # if self.image_handler and (img := await self.image_handler.get()):
-        if self.image_handler and (img := await self.image_handler.get_io()):
-            # img = pic2b64(img)
-            msg += MessageSegment.image(img)
-        msg = MessageSegment.text(f'''{self.text} ''' + (
-            '\n' if self.text else '') + f'''{f'(耗时{"%.2f" % (time.time() - start_time)}s)' if start_time else ''}''') + msg
+        img_exists = False
+        if self.image_handler:
+            img = await self.image_handler.get_io()
+            if img:
+                img_exists = True
+                msg += MessageSegment.image(img)
+
+        content = ''
+        if not img_exists and not self.text:
+            content += self.get_message_precontent('worldflipper.query.failed')
+        else:
+            content += self.get_message_precontent('worldflipper.query.success')
+
+        if start_time:
+            content += f'(耗时{"%.2f" % (time.time() - start_time)}s)'
+        if self.text:
+            content += f'\n{self.text}'
+
+        msg = MessageSegment.text(content) + msg
         return msg
 
     def hash(self) -> object:
