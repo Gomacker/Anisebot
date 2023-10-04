@@ -1,6 +1,7 @@
 import json
 import time
 import traceback
+from pathlib import Path
 from typing import Awaitable, Callable, Any, Coroutine, Optional
 
 from nonebot import on_message, on_fullmatch, logger
@@ -21,7 +22,9 @@ from ...anise import config as anise_config
 
 async def soft_to_me_checker(event: Onebot11MessageEvent):
     def is_at_or_reply_other(segment: Onebot11MessageSegment):
-        return (event.reply and event.reply.sender.user_id != event.self_id) or (segment.type == 'at' and segment.data['qq'] != event.self_id)
+        return (event.reply and event.reply.sender.user_id != event.self_id) or (
+                segment.type == 'at' and segment.data['qq'] != event.self_id)
+
     return not any(filter(is_at_or_reply_other, [m for m in event.message]))
 
 
@@ -114,6 +117,10 @@ def package_checkers(*checkers: Callable[[Onebot11MessageEvent], Awaitable[bool]
 
 
 silent_list = set()
+_temp_silent_list_path = Path('temp_silent_list.json')
+if not _temp_silent_list_path.exists():
+    _temp_silent_list_path.write_text(json.dumps([]), encoding='utf-8')
+silent_list = set(json.loads(_temp_silent_list_path.read_text('utf-8')))
 
 
 async def temp_silent(event: Onebot11MessageEvent):
@@ -122,11 +129,18 @@ async def temp_silent(event: Onebot11MessageEvent):
     return True
 
 
+def temp_reducer(interval: int):
+
+    async def checker(event: Onebot11MessageEvent):
+        pass
+
+
 basic_checkers = package_checkers(whitelist_checker, temp_silent, soft_to_me_checker)
 
 on_query = on_message(rule=Rule(_PrefixChecker(anise_config.config.query.query_prefixes), basic_checkers))
-on_party_query = on_message(rule=Rule(_PrefixChecker(anise_config.config.query.worldflipper_party_query_prefixes), basic_checkers))
-on_query_refresh = on_fullmatch(('t刷新索引', 't重载索引'), rule=Rule(basic_checkers))
+on_party_query = on_message(
+    rule=Rule(_PrefixChecker(anise_config.config.query.worldflipper_party_query_prefixes), basic_checkers))
+on_query_refresh = on_fullmatch(('刷新索引', '重载索引'), rule=Rule(basic_checkers))
 
 
 async def do_query(bot: Onebot11Bot, event: Onebot11MessageEvent, query_manager: QueryManager):
@@ -168,12 +182,16 @@ async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
     await bot.send(event, f'已加载 {ql} 个Query索引！')
 
 
-on_test = on_message(rule=_PrefixChecker(('静音',)), )
+from nonebot.adapters.onebot.v11 import permission as onebot_permission
+
+on_test = on_message(rule=_PrefixChecker(('静音',)),
+                     permission=onebot_permission.GROUP_ADMIN | onebot_permission.GROUP_OWNER)
 
 
 @on_test.handle()
 async def _(bot: Onebot11Bot, event: Onebot11GroupMessageEvent):
     if event.to_me:
         silent_list.add(event.group_id)
+        Path('temp_silent_list.json').write_text(json.dumps(list(silent_list)), encoding='utf-8')
 
-    await bot.send(event, '已静音')
+        await bot.send(event, '已静音')

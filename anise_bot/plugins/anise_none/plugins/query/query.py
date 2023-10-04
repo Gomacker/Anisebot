@@ -267,6 +267,8 @@ class QueryHandlerWorldflipperPurePartySearcher(QueryHandler):
         return text, page_index
 
     async def check(self, text: str) -> Optional[CheckResult]:
+        if not text:
+            return None
         text, page_index = self.get_text_and_page(text)
         async with httpx.AsyncClient() as client:
             response = await client.post(

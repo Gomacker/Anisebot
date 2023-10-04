@@ -1,5 +1,4 @@
 import abc
-import base64
 import hashlib
 import io
 import random
@@ -7,10 +6,10 @@ import time
 import urllib.parse
 from io import BytesIO
 from pathlib import Path
-from typing import Optional, Union, Callable, Any
+from typing import Optional, Callable, Any
 
 import httpx
-from PIL import Image, UnidentifiedImageError, ImageSequence
+from PIL import Image
 
 from anise_bot.plugins.anise_none.anise import config
 from anise_bot.plugins.anise_none.anise.config import METEORHOUSE_URL

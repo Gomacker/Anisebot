@@ -10,7 +10,7 @@ from nonebot.adapters.onebot.v11 import (
 on_gacha = on_fullmatch(('单抽', '十连', '抽干'))
 
 
-@on_gacha.handle()
+# @on_gacha.handle()
 async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
     await bot.send(
         event,
