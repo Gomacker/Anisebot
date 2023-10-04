@@ -209,8 +209,10 @@ class MessageCard:
         c = config.message_contents.get(id_)
         if isinstance(c, list):
             return random.choice(c)
+        elif isinstance(c, str):
+            return c
         else:
-            return str(c)
+            return id_
 
     async def to_message_onebot11(self, start_time=None) -> "Onebot11Message":
         from nonebot.adapters.onebot.v11 import Message, MessageSegment
@@ -237,6 +239,7 @@ class MessageCard:
             content += f'\n{self.exception}'
 
         msg = MessageSegment.text(content) + msg
+        msg = msg + self.get_message_precontent('worldflipper.query.suffix')
         return msg
 
     def hash(self) -> object:
