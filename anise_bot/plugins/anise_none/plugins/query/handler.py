@@ -1,6 +1,8 @@
+import dataclasses
 import json
 import time
 import traceback
+from collections import deque
 from pathlib import Path
 from typing import Awaitable, Callable, Any, Coroutine, Optional
 
@@ -106,16 +108,38 @@ class MessageSync:
 msync = MessageSync()
 
 
-def package_checkers(*checkers: Callable[[Onebot11MessageEvent], Awaitable[bool]]):
+def package_checkers(
+        *checkers: Callable[[Onebot11MessageEvent], Awaitable[bool]],
+        enable_cache: bool = True
+) -> Callable:
+    # 狂暴写成了一个lru_cache，回来再优化这个的结构吧
+    @dataclasses.dataclass
+    class CheckerCache:
+        message_id: int
+        result: bool
+    caches: deque[CheckerCache] = deque(maxlen=10)
+
     async def deco(event: Onebot11MessageEvent):
+
         for checker in checkers:
             result = await checker(event)
-            # print(result)
             if not result:
                 return False
         return True
 
-    return deco
+    async def checker_(event: Onebot11MessageEvent):
+        if enable_cache:
+            f: list[CheckerCache] = list(filter(lambda x: x.message_id == event.message_id, caches))
+            if f:
+                return f[0].result
+            else:
+                result = await deco(event)
+                caches.append(CheckerCache(event.message_id, result))
+                return result
+        else:
+            return await deco(event)
+
+    return checker_
 
 
 silent_list = set()
@@ -132,7 +156,6 @@ async def temp_silent(event: Onebot11MessageEvent):
 
 
 def temp_reducer(interval: int):
-
     async def checker(event: Onebot11MessageEvent):
         pass
 
@@ -164,6 +187,7 @@ async def do_query(bot: Onebot11Bot, event: Onebot11MessageEvent, query_manager:
 
 @on_query.handle()
 async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
+    print(f'on handle {event}')
     await do_query(bot, event, get_query())
 
 
@@ -186,14 +210,29 @@ async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
 
 from nonebot.adapters.onebot.v11 import permission as onebot_permission
 
-on_test = on_message(rule=_PrefixChecker(('静音',)),
-                     permission=onebot_permission.GROUP_ADMIN | onebot_permission.GROUP_OWNER)
+on_silent_open = on_message(
+    rule=_PrefixChecker(('静音',)),
+    permission=onebot_permission.GROUP_ADMIN | onebot_permission.GROUP_OWNER
+)
+on_silent_close = on_message(
+    rule=_PrefixChecker(('解除静音',)),
+    permission=onebot_permission.GROUP_ADMIN | onebot_permission.GROUP_OWNER
+)
 
 
-@on_test.handle()
+@on_silent_open.handle()
 async def _(bot: Onebot11Bot, event: Onebot11GroupMessageEvent):
     if event.to_me:
         silent_list.add(event.group_id)
         Path('temp_silent_list.json').write_text(json.dumps(list(silent_list)), encoding='utf-8')
 
         await bot.send(event, '已静音')
+
+
+@on_silent_close.handle()
+async def _(bot: Onebot11Bot, event: Onebot11GroupMessageEvent):
+    if event.to_me:
+        silent_list.remove(event.group_id)
+        Path('temp_silent_list.json').write_text(json.dumps(list(silent_list)), encoding='utf-8')
+
+        await bot.send(event, f'已解除静音')

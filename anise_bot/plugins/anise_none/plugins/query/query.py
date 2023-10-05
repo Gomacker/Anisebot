@@ -204,10 +204,14 @@ class QueryHandlerWorldflipperObject(QueryHandler):
                 ih = ImageHandlerPageScreenshot(
                     urllib.parse.urljoin(METEORHOUSE_URL, f'/card/character/?wf_id={id_}'),
                     selector='#main-card',
-                    cache_path_getter=lambda x: RES_PATH / 'query' / 'cache' / 'wikicard' / f'{res_id}.png'
+                    cache_path_getter=lambda x: RES_PATH / 'query' / 'cache' / 'wikicard' / check_result.obj.type_id() / f'{res_id}.png'
                 )
         elif isinstance(check_result.obj, Equipment):
-            ih = None
+            ih = ImageHandlerPageScreenshot(
+                    urllib.parse.urljoin(METEORHOUSE_URL, f'/card/equipment/?wf_id={id_}'),
+                    selector='#main-card',
+                    cache_path_getter=lambda x: RES_PATH / 'query' / 'cache' / 'wikicard' / check_result.obj.type_id() / f'{res_id}.png'
+                )
         mc = MessageCard(
             image_handler=ih
         )

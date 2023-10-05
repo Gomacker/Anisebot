@@ -1,3 +1,4 @@
 @echo off
-poetry run nb run --reload
+call .\venv\Scripts\activate
+py bot.py
 pause
