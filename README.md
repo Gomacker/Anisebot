@@ -8,17 +8,45 @@
 ## How to start
 
 ### 脚本<del>（好像还是有点问题，欢迎大家推优化）</del>
-1. 如果缺少python，安装python环境 (推荐3.10.x)
+1. 如果缺少python，安装python环境
+   
+   Python版本请使用3.10.x，不同的版本可能会导致不可预知的问题
 2. 运行安装依赖.bat
+
+   ① 请确保安装依赖过程正常完成
+
+   ② 根据网络状况可能出现较长耗时，请耐心等待
+
+   ③ 若出现connect、timeout等字样报错大概率为网络问题，请自行调整网络环境
+
 3. 运行bot `runbot.bat`
-4. 配置并运行你的 bot 前端实现（[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 、 [mirai](https://mirai.mamoe.net/) 等）
+
+   请确保运行后命令行看到如下输出，这代表bot已经启动成功并开始监听
+
    ```
-   推荐用反向ws连接 ws://127.0.0.1:8080/onebot/v11/
+   > [INFO] uvicorn | Waiting for application startup.
+   > [INFO] uvicorn | Application startup complete.
+   > [INFO] uvicorn | Uvicorn running on http://0.0.0.0:8080 (Press CTRL+C to quit)
    ```
+
+4. 配置并运行你的 bot 前端实现
+   
+   ① [go-cqhttp](https://github.com/Mrs4s/go-cqhttp)
+   
+   [查看文档](doc/botConnect-GoCq.md)
+
+   ② [mirai](https://mirai.mamoe.net/)
+   
+   [查看文档](doc/botConnect-Mirai.md)
+
+   ③ etc
+ 
 
 ### 手动
 使用 Poetry 进行包管理
-1. 如果缺少python，安装python环境 (推荐3.10.x)
+1. 如果缺少python，安装python环境 
+   
+   Python版本请使用3.10.x，不同的版本可能会导致不可预知的问题
 2. Win+R启动 cmd 或 powershell 运行以下命令安装 poetry
    ```
    > pip install poetry
@@ -35,6 +63,15 @@
    ```
    > poetry run nb run
    ```
-6. 配置并运行你的 bot 前端实现（[go-cqhttp](https://github.com/Mrs4s/go-cqhttp) 、 [mirai](https://mirai.mamoe.net/) 等）
+6. 配置并运行你的 bot 前端实现
+   
+   ① [go-cqhttp](https://github.com/Mrs4s/go-cqhttp)
+   
+   [查看文档](doc/botConnect-GoCq.md)
 
-   推荐用反向ws连接 `ws://127.0.0.1:8080/onebot/v11/`
+   ② [mirai](https://mirai.mamoe.net/)
+   
+   [查看文档](doc/botConnect-Mirai.md)
+
+   ③ etc
+
