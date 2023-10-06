@@ -36,7 +36,7 @@ class AliasManager:
         for t in [Character, Equipment]:
             for id_, obj in manager.dict_of(t).items():
                 for name in obj.names:
-                    print(name, id_)
+                    # print(name, id_)
                     if name in self.alias2obj:
                         continue
                     self.alias2obj[name] = obj
@@ -54,7 +54,7 @@ class AliasManager:
 
     def guess(self, s: str) -> Optional[GameObject]:
         name, score = process.extractOne(s, self.alias2obj.keys())
-        print(name, score)
+        # print(name, score)
         if score >= 60:
             return self.alias2obj[name]
         return None

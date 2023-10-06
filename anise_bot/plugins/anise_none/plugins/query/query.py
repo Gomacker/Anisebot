@@ -17,7 +17,7 @@ from pydantic import BaseModel
 
 from .utils import (
     MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot,
-    ImageHandlerPostProcessor, PlaywrightContext
+    ImageHandlerPostProcessor, PlaywrightContext, update
 )
 from ...anise.config import METEORHOUSE_URL, RES_PATH, CALENDAR_URL
 from ...anise.query.alias import alias_manager
@@ -367,7 +367,8 @@ class QueryManager:
             return None
         return TQH(**data)
 
-    def init(self, path=RES_PATH):
+    async def init(self, path=RES_PATH):
+        await update.manager.update()
         self.query_handlers.clear()
         config_path = path / 'query' / 'config.json'
         if not path.exists():
@@ -430,23 +431,23 @@ class QueryManager:
 _QM = None
 
 
-def get_query() -> QueryManager:
+async def get_query() -> QueryManager:
     global _QM
     if _QM is None:
         _QM = QueryManager()
         _QM.load_default_type()
         _QM.load_worldflipper_type()
-        _QM.init()
+        await _QM.init()
     return _QM
 
+asyncio.get_event_loop().run_until_complete(get_query())
 
-get_query()
 
 if __name__ == '__main__':
     async def main():
         t = time.time()
         # print(f'(耗时{"%.2f" % (time.time() - t)}s)')
-        qm = get_query()
+        qm = await get_query()
         mc = await qm.query('雷废')
         print(mc)
         # for query_handler in qm.query_handlers:

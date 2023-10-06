@@ -170,6 +170,7 @@ class ImageHandlerPageScreenshot(ImageHandler, BasicTimerCache):
                 async with PlaywrightContext(**self.kwargs) as context:
                     page = await context.new_page()
                     await page.goto(self.url, wait_until='networkidle')
+                    # await page.wait_for_timeout(1000)
                     loc = page.locator(self.selector)
                     img = await loc.screenshot(type='png', omit_background=True)
                 img = Image.open(io.BytesIO(img)).convert('RGBA')
@@ -204,7 +205,8 @@ class MessageCard:
         self.kwargs: dict = {}
         self.exception: str = exception
 
-    def get_message_precontent(self, id_: str):
+    @staticmethod
+    def get_message_precontent(id_: str):
         c = config.message_contents.get(id_)
         if isinstance(c, list):
             return random.choice(c)

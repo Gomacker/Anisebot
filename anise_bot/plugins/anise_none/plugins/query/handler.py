@@ -70,6 +70,8 @@ class MessageSync:
         self.sync_server: str = ''
         self.ws: Optional[WebSocketClientProtocol] = None
         self.uri = 'ws://meteorhouse.wiki/bot/sync/ws'
+        # self.uri = 'ws://39.101.183.69/bot/sync/ws'
+        # self.uri = 'ws://localhost:14044/bot/sync/ws'
 
         self.failed_count = 0
         self.failed_max = 3
@@ -98,9 +100,11 @@ class MessageSync:
             msg: dict = json.loads(await self.ws.recv())
             print(f'Received {msg}')
             return msg.get('accept', False)
-        except:
+        except Exception as e:
+
             self.failed_count += 1
             self.retry_time = time.time() + self.retry_cooldown
+            traceback.print_exception(e)
             logger.error('连接至同步服务器失败，已自动通过消息处理过滤')
             return True
 
@@ -188,7 +192,7 @@ async def do_query(bot: Onebot11Bot, event: Onebot11MessageEvent, query_manager:
 @on_query.handle()
 async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
     print(f'on handle {event}')
-    await do_query(bot, event, get_query())
+    await do_query(bot, event, await get_query())
 
 
 PQR_QM = QueryManager()
@@ -203,8 +207,8 @@ async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
 
 @on_query_refresh.handle()
 async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
-    qm = get_query()
-    ql = qm.init()
+    qm = await get_query()
+    ql = await qm.init()
     await bot.send(event, f'已加载 {ql} 个Query索引！')
 
 
