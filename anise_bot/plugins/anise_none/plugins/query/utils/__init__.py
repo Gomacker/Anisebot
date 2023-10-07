@@ -218,7 +218,6 @@ class MessageCard:
     async def to_message_onebot11(self, start_time=None) -> "Onebot11Message":
         from nonebot.adapters.onebot.v11 import Message, MessageSegment
         msg = Message()
-        # if self.image_handler and (img := await self.image_handler.get()):
         img_exists = False
         if self.image_handler:
             img = await self.image_handler.get_io()
@@ -248,8 +247,10 @@ class MessageCard:
             f'{self.text}{self.image_handler.key() if self.image_handler else None}'.encode()).hexdigest()
 
     def __str__(self):
-        return f'''MessageCard
+        return f'''
+MessageCard
 {'-' * 30}
 {self.text}
 {self.image_handler}
-{'-' * 30}'''
+{'-' * 30}
+'''.strip()
