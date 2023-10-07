@@ -1,3 +1,4 @@
+import abc
 import dataclasses
 import json
 import urllib.parse
@@ -5,9 +6,20 @@ from pathlib import Path
 
 import httpx
 from nonebot import logger
+from pydantic import BaseModel
 
 from ....anise import config
 from ....anise.config import RES_PATH, DATA_PATH
+
+
+class UpdateEntry(BaseModel, abc.ABC):
+    url: str
+    path: Path
+    name: str = ''
+
+    @abc.abstractmethod
+    async def update(self):
+        raise NotImplementedError
 
 
 class UpdateManager:
@@ -42,7 +54,6 @@ class UpdateManager:
                     UpdateEntry(self.query_config_url, RES_PATH / 'query' / 'config.json', 'Query Config'),
                     UpdateEntry(urllib.parse.urljoin(self.url, '/api/v2/'), DATA_PATH / 'object' / 'os' / 'character.json', 'Character Data'),
                     UpdateEntry(self.url, DATA_PATH / 'object' / 'os' / 'equipment.json', 'Equipment Data'),
-
                 ]
                 for update_ in updates:
                     logger.info(f'从{self.query_config_url}获取{update_.log_name}...')
