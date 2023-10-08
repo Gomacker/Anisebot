@@ -239,7 +239,7 @@ class MessageCard:
             content += f'\n{self.exception}'
 
         msg = MessageSegment.text(content) + msg
-        msg = msg + self.get_message_precontent('worldflipper.query.suffix')
+        msg = msg + '\n' + self.get_message_precontent('worldflipper.query.suffix')
         return msg
 
     def hash(self) -> object:

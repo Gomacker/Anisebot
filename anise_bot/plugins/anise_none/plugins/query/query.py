@@ -344,6 +344,7 @@ class QueryHandlerWorldflipperPartyRefer(QueryHandler):
 
     async def get_message(self, check_result: CheckResult) -> Optional[MessageCard]:
         cache_path = RES_PATH / 'query' / 'cache' / 'party_refer' / f'{check_result.party_code}.png'
+        cache_path.parent.mkdir(parents=True, exist_ok=True)
         check_result.pic.save(cache_path)
         return MessageCard(image_handler=ImageHandlerLocalFile(cache_path))
 
