@@ -4,7 +4,7 @@ import time
 import traceback
 from collections import deque
 from pathlib import Path
-from typing import Awaitable, Callable, Any, Coroutine, Optional
+from typing import Awaitable, Callable, Optional
 
 from nonebot import on_message, on_fullmatch, logger
 from nonebot.adapters.onebot.v11 import (
@@ -69,9 +69,7 @@ class MessageSync:
         self.bot_id: str = 'debug-xxxxxx'
         self.sync_server: str = ''
         self.ws: Optional[WebSocketClientProtocol] = None
-        self.uri = 'ws://meteorhouse.wiki/bot/sync/ws'
-        # self.uri = 'ws://39.101.183.69/bot/sync/ws'
-        # self.uri = 'ws://localhost:14044/bot/sync/ws'
+        self.uri = anise_config.config.sync_uri
 
         self.failed_count = 0
         self.failed_max = 3
@@ -80,7 +78,7 @@ class MessageSync:
 
     async def connect(self):
         import websockets
-        self.ws = await websockets.connect(self.uri)
+        self.ws = await websockets.connect(self.uri) if self.uri else None
 
     async def check(self, event: Onebot11MessageEvent, card: MessageCard) -> bool:
         if self.failed_count >= self.failed_max:
@@ -99,7 +97,7 @@ class MessageSync:
             await self.ws.send(json.dumps(data))
             msg: dict = json.loads(await self.ws.recv())
             print(f'Received {msg}')
-            return msg.get('accept', False)
+            return msg.get('send', False)
         except Exception as e:
 
             self.failed_count += 1

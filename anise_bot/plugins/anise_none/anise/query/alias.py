@@ -28,7 +28,9 @@ class AliasManager:
                     continue
                 if not isinstance(n, str):
                     continue
-                self.alias2obj[n] = obj_getter(id_)
+                if not n:
+                    continue
+                self.add(n, obj_getter(id_))
 
     def init(self):
         self.init_from_toml(RES_PATH / 'alias' / 'character.toml', lambda x: manager.get(Character, x))
@@ -39,7 +41,9 @@ class AliasManager:
                     # print(name, id_)
                     if name in self.alias2obj:
                         continue
-                    self.alias2obj[name] = obj
+                    if not name:
+                        continue
+                    self.add(name, obj)
 
     def get_obj(self, s: str) -> Optional[GameObject]:
         return self.alias2obj.get(s)
@@ -54,7 +58,7 @@ class AliasManager:
 
     def guess(self, s: str) -> Optional[GameObject]:
         name, score = process.extractOne(s, self.alias2obj.keys())
-        # print(name, score)
+        print(name, score)
         if score >= 60:
             return self.alias2obj[name]
         return None

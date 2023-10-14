@@ -15,9 +15,10 @@ from PIL import Image
 from nonebot import logger
 from pydantic import BaseModel
 
+from ... import update
 from .utils import (
     MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot,
-    ImageHandlerPostProcessor, PlaywrightContext, update
+    ImageHandlerPostProcessor, PlaywrightContext
 )
 from ...anise.config import METEORHOUSE_URL, RES_PATH, CALENDAR_URL
 from ...anise.query.alias import alias_manager
@@ -146,7 +147,7 @@ class QueryHandlerWorldflipperObject(QueryHandler):
         if isinstance(check_result.obj, Character):
             def full_shot_post_process(image: Image.Image):
                 bg = Image.new('RGB', size=image.size, color=(240, 240, 240))
-                bg.paste(image, image)
+                bg.paste(image, image.getbbox())
                 return bg.convert('RGBA')
 
             if check_result.type == EnumObjectResType.FULL_SHOT_0:

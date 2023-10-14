@@ -34,6 +34,7 @@ class QueryConfig(BaseModel):
 
 class Config(BaseModel):
     query: QueryConfig = QueryConfig.parse_obj({})
+    sync_uri: str = ''
 
 
 _config_path = CONFIG_PATH / 'config.toml'
