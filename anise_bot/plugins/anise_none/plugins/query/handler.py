@@ -2,7 +2,6 @@ import dataclasses
 import json
 import time
 import traceback
-import urllib.parse
 from collections import deque
 from pathlib import Path
 from typing import Awaitable, Callable, Optional, Union
@@ -15,7 +14,6 @@ from nonebot.adapters.onebot.v11 import (
     MessageSegment as Onebot11MessageSegment
 )
 from nonebot.adapters.red import (
-    Bot as RedBot,
     MessageEvent as RedMessageEvent,
     GroupMessageEvent as RedGroupMessageEvent,
     MessageSegment as RedMessageSegment
@@ -24,10 +22,9 @@ from nonebot.internal.rule import Rule
 from websockets.legacy.client import WebSocketClientProtocol
 
 from .query import get_query, QueryManager, QueryHandlerWorldflipperPurePartySearcher
-from .utils import MessageCard, ImageHandlerPageScreenshot
+from .utils import MessageCard
 from ... import config
 from ...anise import config as anise_config
-from ...anise.config import METEORHOUSE_URL
 
 MessageEvent = Union[Onebot11MessageEvent, RedMessageEvent]
 GroupMessageEvent = Union[Onebot11GroupMessageEvent, RedGroupMessageEvent]
