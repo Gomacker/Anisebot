@@ -2,32 +2,47 @@ import dataclasses
 import json
 import time
 import traceback
+import urllib.parse
 from collections import deque
 from pathlib import Path
-from typing import Awaitable, Callable, Optional
+from typing import Awaitable, Callable, Optional, Union
 
-from nonebot import on_message, on_fullmatch, logger
+from nonebot import on_message, on_fullmatch, logger, Bot
 from nonebot.adapters.onebot.v11 import (
     Bot as Onebot11Bot,
     MessageEvent as Onebot11MessageEvent,
     GroupMessageEvent as Onebot11GroupMessageEvent,
     MessageSegment as Onebot11MessageSegment
 )
+from nonebot.adapters.red import (
+    Bot as RedBot,
+    MessageEvent as RedMessageEvent,
+    GroupMessageEvent as RedGroupMessageEvent,
+    MessageSegment as RedMessageSegment
+)
 from nonebot.internal.rule import Rule
 from websockets.legacy.client import WebSocketClientProtocol
 
 from .query import get_query, QueryManager, QueryHandlerWorldflipperPurePartySearcher
-from .utils import MessageCard
+from .utils import MessageCard, ImageHandlerPageScreenshot
 from ... import config
 from ...anise import config as anise_config
+from ...anise.config import METEORHOUSE_URL
+
+MessageEvent = Union[Onebot11MessageEvent, RedMessageEvent]
+GroupMessageEvent = Union[Onebot11GroupMessageEvent, RedGroupMessageEvent]
+MessageSegment = Union[Onebot11MessageSegment, RedMessageSegment]
 
 
-async def soft_to_me_checker(event: Onebot11MessageEvent):
-    def is_at_or_reply_other(segment: Onebot11MessageSegment):
-        return (event.reply and event.reply.sender.user_id != event.self_id) or (
-                segment.type == 'at' and segment.data['qq'] != event.self_id)
+async def soft_to_me_checker(event: MessageEvent):
+    def is_at_or_reply_other(segment: MessageSegment):
+        if isinstance(segment, Onebot11MessageSegment):
+            return (event.reply and event.reply.sender.user_id != event.self_id) or (
+                    segment.type == 'at' and segment.data['qq'] != event.self_id)
+        elif isinstance(segment, RedMessageSegment):
+            return event.to_me
 
-    return not any(filter(is_at_or_reply_other, [m for m in event.message]))
+    return not any(filter(is_at_or_reply_other, [msg for msg in event.message]))
 
 
 class _PrefixChecker:
@@ -36,7 +51,7 @@ class _PrefixChecker:
             prefix = (prefix,)
         self.prefix: list[str] = [x.lower() for x in sorted(list(set(prefix)), key=lambda x: len(x), reverse=True)]
 
-    async def __call__(self, event: Onebot11MessageEvent) -> bool:
+    async def __call__(self, event: MessageEvent) -> bool:
         msg = event.get_message()
         tmsg = None
         for m in msg:
@@ -53,9 +68,13 @@ class _PrefixChecker:
         return False
 
 
-async def whitelist_checker(event: Onebot11MessageEvent) -> bool:
-    if config.whitelist and isinstance(event, Onebot11GroupMessageEvent):
-        return event.group_id in config.whitelist
+async def whitelist_checker(event: MessageEvent) -> bool:
+    if config.whitelist:
+        if isinstance(event, Onebot11GroupMessageEvent):
+            return event.group_id in config.whitelist
+        elif isinstance(event, RedGroupMessageEvent):
+            # print(event.peerUid, type(event.peerUid))
+            return int(event.peerUid) in config.whitelist
     return True
 
 
@@ -80,17 +99,21 @@ class MessageSync:
         import websockets
         self.ws = await websockets.connect(self.uri) if self.uri else None
 
-    async def check(self, event: Onebot11MessageEvent, card: MessageCard) -> bool:
+    async def check(self, bot: Bot, event: MessageEvent, card: MessageCard) -> bool:
         if self.failed_count >= self.failed_max:
             if time.time() < self.retry_time:
                 self.failed_count = 0
             return True
 
         try:
-            if not self.ws or self.ws.closed:
+            message_id = event.msgRandom if isinstance(event, RedMessageEvent) else event.message_id
+            user_id = event.get_user_id()
+            bot_id = bot.self_id
+
+            if anise_config.config.sync_uri and not self.ws or self.ws.closed:
                 await self.connect()
-            print(type(self.ws))
-            data = {'message_id': event.message_id, 'user_id': event.user_id}
+
+            data = {'message_id': message_id, 'user_id': user_id, 'bot_id': bot_id}
             if isinstance(event, Onebot11GroupMessageEvent):
                 data['group_id'] = event.group_id
             data['card_hash'] = card.hash()
@@ -111,7 +134,7 @@ msync = MessageSync()
 
 
 def package_checkers(
-        *checkers: Callable[[Onebot11MessageEvent], Awaitable[bool]],
+        *checkers: Callable[[MessageEvent], Awaitable[bool]],
         enable_cache: bool = True
 ) -> Callable:
     # 狂暴写成了一个lru_cache，回来再优化这个的结构吧
@@ -121,22 +144,22 @@ def package_checkers(
         result: bool
     caches: deque[CheckerCache] = deque(maxlen=10)
 
-    async def deco(event: Onebot11MessageEvent):
-
+    async def deco(event: MessageEvent):
         for checker in checkers:
             result = await checker(event)
             if not result:
                 return False
         return True
 
-    async def checker_(event: Onebot11MessageEvent):
+    async def checker_(event: MessageEvent):
         if enable_cache:
-            f: list[CheckerCache] = list(filter(lambda x: x.message_id == event.message_id, caches))
+            message_id = event.msgId if isinstance(event, RedMessageEvent) else event.message_id
+            f: list[CheckerCache] = list(filter(lambda x: x.message_id == message_id, caches))
             if f:
                 return f[0].result
             else:
                 result = await deco(event)
-                caches.append(CheckerCache(event.message_id, result))
+                caches.append(CheckerCache(message_id, result))
                 return result
         else:
             return await deco(event)
@@ -151,15 +174,12 @@ if not _temp_silent_list_path.exists():
 silent_list = set(json.loads(_temp_silent_list_path.read_text('utf-8')))
 
 
-async def temp_silent(event: Onebot11MessageEvent):
+async def temp_silent(event: MessageEvent):
     if isinstance(event, Onebot11GroupMessageEvent):
         return event.group_id not in silent_list
+    elif isinstance(event, RedGroupMessageEvent):
+        return event.peerUid not in silent_list
     return True
-
-
-def temp_reducer(interval: int):
-    async def checker(event: Onebot11MessageEvent):
-        pass
 
 
 basic_checkers = package_checkers(whitelist_checker, temp_silent, soft_to_me_checker)
@@ -170,27 +190,43 @@ on_party_query = on_message(
 on_query_refresh = on_fullmatch(('刷新索引', '重载索引'), rule=Rule(basic_checkers))
 
 
-async def do_query(bot: Onebot11Bot, event: Onebot11MessageEvent, query_manager: QueryManager):
+async def do_query(bot: Bot, event: MessageEvent, query_manager: QueryManager):
     t = time.time()
     mc = await query_manager.query(event.get_plaintext())
+
+
     if not mc:
-        mc = MessageCard()
-        await bot.send(event, await mc.to_message_onebot11(start_time=t), reply_message=True)
+        mc = MessageCard()  # 空Card返回Failed的Message
+        if isinstance(event, RedMessageEvent):
+            await bot.send(event, await mc.to_message_onebot11(start_time=t), reply_message=True)
+        else:
+            await bot.send(event, await mc.to_message_red(event, start_time=t), reply_message=True)
         return
-    if await msync.check(event, mc):
+
+
+    if await msync.check(bot, event, mc):
         try:
-            msg = await mc.to_message_onebot11(start_time=t)
+            if isinstance(event, RedMessageEvent):
+                print('isinstance(bot, RedBot) and isinstance(event, RedMessageEvent)')
+                msg = await mc.to_message_red(event, start_time=t)
+                # print(msg)
+            else:
+                msg = await mc.to_message_onebot11(start_time=t)
         except Exception as e:
             exc = MessageCard(exception=f'发生了错误: {e.__class__}')
             traceback.print_exception(e)
-            msg = await exc.to_message_onebot11(start_time=t)
+            if isinstance(event, RedMessageEvent):
+                msg = await exc.to_message_red(event, start_time=t)
+            else:
+                msg = await exc.to_message_onebot11(start_time=t)
         await bot.send(event, msg, reply_message=True)
 
 
 @on_query.handle()
-async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
+async def _(bot: Bot, event: MessageEvent):
     print(f'on handle {event}')
     await do_query(bot, event, await get_query())
+
 
 
 PQR_QM = QueryManager()
@@ -199,12 +235,12 @@ PQR_QM.query_handlers = [QueryHandlerWorldflipperPurePartySearcher(**{'type': 'p
 
 
 @on_party_query.handle()
-async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
+async def _(bot: Bot, event: MessageEvent):
     await do_query(bot, event, PQR_QM)
 
 
 @on_query_refresh.handle()
-async def _(bot: Onebot11Bot, event: Onebot11MessageEvent):
+async def _(bot: Bot, event: MessageEvent):
     qm = await get_query()
     ql = await qm.init()
     await bot.send(event, f'已加载 {ql} 个Query索引！')

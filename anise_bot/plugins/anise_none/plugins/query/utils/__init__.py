@@ -11,13 +11,22 @@ from typing import Optional, Callable, Any
 import httpx
 from PIL import Image
 
-from anise_bot.plugins.anise_none.anise import config
-from anise_bot.plugins.anise_none.anise.config import METEORHOUSE_URL
+from ....anise import config
+from ....anise.config import METEORHOUSE_URL
 from . import playw
 from .playw import PlaywrightContext
 
+
+
 try:
     from nonebot.adapters.onebot.v11 import Message as Onebot11Message
+except ModuleNotFoundError:
+    pass
+try:
+    from nonebot.adapters.red import (
+        MessageEvent as RedMessageEvent,
+        Message as RedMessage
+    )
 except ModuleNotFoundError:
     pass
 
@@ -240,6 +249,35 @@ class MessageCard:
 
         msg = MessageSegment.text(content) + msg
         msg = msg + '\n' + self.get_message_precontent('worldflipper.query.suffix')
+        return msg
+
+    async def to_message_red(self, event: RedMessageEvent, start_time=None) -> "RedMessage":
+        from nonebot.adapters.red import Message, MessageSegment
+        msg = Message()
+        img_exists = False
+        if self.image_handler:
+            img = await self.image_handler.get_io()
+            if img:
+                img_exists = True
+                msg += MessageSegment.image(img)
+
+        content = ''
+        if not img_exists and not self.text:
+            content += self.get_message_precontent('worldflipper.query.failed')
+        else:
+            content += self.get_message_precontent('worldflipper.query.success')
+
+        if start_time:
+            content += f'(耗时{"%.2f" % (time.time() - start_time)}s)'
+        if self.text:
+            content += f'\n{self.text}'
+        if self.exception:
+            content += f'\n{self.exception}'
+
+        msg = MessageSegment.text(content) + msg
+        msg = msg + '\n' + self.get_message_precontent('worldflipper.query.suffix')
+        msg = MessageSegment.reply(event.msgSeq, event.msgId, event.senderUin) + msg
+        # msg = MessageSegment.at(event.senderUin) + msg
         return msg
 
     def hash(self) -> object:

@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "anisebot"
-version = "1.0.0-pre3"
-description = "anisebot"
+version = "1.0.0-pre5"
+description = "开源的世界弹射物语的Nonebot实现"
 authors = ["Gomacker"]
 readme = "README.md"
 
@@ -22,7 +22,8 @@ nb-cli = "^1.1.2"
 
 [tool.nonebot]
 adapters = [
-    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" }
+    { name = "OneBot V11", module_name = "nonebot.adapters.onebot.v11" },
+    {name = "RedProtocol", module_name = "nonebot.adapters.red"}
 ]
 plugins = []
 plugin_dirs = ["anise_bot/plugins"]
