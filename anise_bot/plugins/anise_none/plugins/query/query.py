@@ -147,7 +147,7 @@ class QueryHandlerWorldflipperObject(QueryHandler):
         if isinstance(check_result.obj, Character):
             def full_shot_post_process(image: Image.Image):
                 bg = Image.new('RGB', size=image.size, color=(240, 240, 240))
-                bg.paste(image, image.getbbox())
+                bg.paste(image, mask=image)
                 return bg.convert('RGBA')
 
             if check_result.type == EnumObjectResType.FULL_SHOT_0:
