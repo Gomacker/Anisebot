@@ -128,9 +128,7 @@ class QueryHandlerWorldflipperObject(QueryHandler):
             text = text.removesuffix('pakc')
 
         if self.strict:
-            # print(text)
             obj = alias_manager.get_obj(text)
-            # print(obj)
         else:
             obj = alias_manager.guess(text)
         if obj:

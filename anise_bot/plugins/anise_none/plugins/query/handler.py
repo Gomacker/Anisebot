@@ -70,7 +70,6 @@ async def whitelist_checker(event: MessageEvent) -> bool:
         if isinstance(event, Onebot11GroupMessageEvent):
             return event.group_id in config.whitelist
         elif isinstance(event, RedGroupMessageEvent):
-            # print(event.peerUid, type(event.peerUid))
             return int(event.peerUid) in config.whitelist
     return True
 
@@ -116,7 +115,7 @@ class MessageSync:
             data['card_hash'] = card.hash()
             await self.ws.send(json.dumps(data))
             msg: dict = json.loads(await self.ws.recv())
-            print(f'Received {msg}')
+            logger.debug(f'Received {msg}')
             return msg.get('send', False)
         except Exception as e:
 
@@ -204,9 +203,7 @@ async def do_query(bot: Bot, event: MessageEvent, query_manager: QueryManager):
     if await msync.check(bot, event, mc):
         try:
             if isinstance(event, RedMessageEvent):
-                print('isinstance(bot, RedBot) and isinstance(event, RedMessageEvent)')
                 msg = await mc.to_message_red(event, start_time=t)
-                # print(msg)
             else:
                 msg = await mc.to_message_onebot11(start_time=t)
         except Exception as e:
@@ -221,7 +218,6 @@ async def do_query(bot: Bot, event: MessageEvent, query_manager: QueryManager):
 
 @on_query.handle()
 async def _(bot: Bot, event: MessageEvent):
-    print(f'on handle {event}')
     await do_query(bot, event, await get_query())
 
 

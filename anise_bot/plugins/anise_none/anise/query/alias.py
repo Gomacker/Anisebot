@@ -38,7 +38,6 @@ class AliasManager:
         for t in [Character, Equipment]:
             for id_, obj in manager.dict_of(t).items():
                 for name in obj.names:
-                    # print(name, id_)
                     if name in self.alias2obj:
                         continue
                     if not name:
