@@ -20,7 +20,7 @@ from .utils import (
     MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot,
     ImageHandlerPostProcessor, PlaywrightContext
 )
-from ...anise.config import METEORHOUSE_URL, RES_PATH, CALENDAR_URL
+from ...anise.config import METEORHOUSE_URL, RES_PATH, CALENDAR_URL, config
 from ...anise.query.alias import alias_manager
 from ...models.worldflipper import Equipment, Character
 
@@ -368,7 +368,8 @@ class QueryManager:
         return TQH(**data)
 
     async def init(self, path=RES_PATH):
-        await update.manager.update()
+        if config.query.update_on_startup:
+            await update.manager.update()
         self.query_handlers.clear()
         config_path = path / 'query' / 'config.json'
         if not path.exists():

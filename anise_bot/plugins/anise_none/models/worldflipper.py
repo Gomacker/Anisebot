@@ -146,13 +146,14 @@ def load_from_json(path: Path, type_: type[GameObject]):
     manager.register_type(type_)
     data: dict = json.loads(path.read_text('utf-8'))
     for id_, item_data in data.items():
+        # print(item_data)
         obj = type_.parse_obj({'id': id_, **item_data})
         manager.register(id_, obj)
 
 
 def load_all():
-    character_path = DATA_PATH / 'object' / 'os' / 'character.json'
-    equipment_path = DATA_PATH / 'object' / 'os' / 'equipment.json'
+    character_path = DATA_PATH / 'worldflipper/object' / 'character.json'
+    equipment_path = DATA_PATH / 'worldflipper/object' / 'equipment.json'
 
     load_from_json(character_path, Character)
     load_from_json(equipment_path, Equipment)
