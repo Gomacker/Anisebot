@@ -16,7 +16,7 @@ from nonebot import logger
 from pydantic import BaseModel
 
 from ... import update
-from .utils import (
+from ...utils import (
     MessageCard, ImageHandlerLocalFile, ImageHandlerNetwork, ImageHandlerPageScreenshot,
     ImageHandlerPostProcessor, PlaywrightContext
 )

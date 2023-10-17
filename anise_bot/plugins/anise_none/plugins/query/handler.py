@@ -22,7 +22,7 @@ from nonebot.internal.rule import Rule
 from websockets.legacy.client import WebSocketClientProtocol
 
 from .query import get_query, QueryManager, QueryHandlerWorldflipperPurePartySearcher
-from .utils import MessageCard
+from ...utils import MessageCard
 from ... import config
 from ...anise import config as anise_config
 

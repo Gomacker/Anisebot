@@ -11,8 +11,8 @@ from typing import Optional, Callable, Any
 import httpx
 from PIL import Image
 
-from ....anise import config
-from ....anise.config import METEORHOUSE_URL
+from anise_bot.plugins.anise_none.anise import config
+from anise_bot.plugins.anise_none.anise.config import METEORHOUSE_URL
 from . import playw
 from .playw import PlaywrightContext
 

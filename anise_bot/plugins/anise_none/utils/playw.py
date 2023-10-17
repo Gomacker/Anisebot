@@ -3,7 +3,7 @@ from typing import Optional
 import playwright
 from playwright.async_api import Browser, BrowserContext
 
-from ....anise.config import DATA_PATH
+from anise_bot.plugins.anise_none.anise.config import DATA_PATH
 
 _browser: Optional[Browser] = None
 
