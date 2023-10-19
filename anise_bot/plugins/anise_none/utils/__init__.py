@@ -248,7 +248,7 @@ class MessageCard:
             content += f'\n{self.exception}'
 
         msg = MessageSegment.text(content) + msg
-        msg = msg + '\n' + self.get_message_precontent('worldflipper.query.suffix')
+        msg = msg + self.get_message_precontent('worldflipper.query.suffix')
         return msg
 
     async def to_message_red(self, event: RedMessageEvent, start_time=None) -> "RedMessage":
@@ -275,7 +275,7 @@ class MessageCard:
             content += f'\n{self.exception}'
 
         msg = MessageSegment.text(content) + msg
-        msg = msg + '\n' + self.get_message_precontent('worldflipper.query.suffix')
+        msg = msg + self.get_message_precontent('worldflipper.query.suffix')
         msg = MessageSegment.reply(event.msgSeq, event.msgId, event.senderUin) + msg
         # msg = MessageSegment.at(event.senderUin) + msg
         return msg

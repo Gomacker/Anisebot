@@ -1,4 +1,5 @@
 import dataclasses
+import hashlib
 import json
 import time
 import traceback
@@ -19,6 +20,7 @@ from nonebot.adapters.red import (
     MessageSegment as RedMessageSegment
 )
 from nonebot.internal.rule import Rule
+from websockets.exceptions import ConnectionClosed
 from websockets.legacy.client import WebSocketClientProtocol
 
 from .query import get_query, QueryManager, QueryHandlerWorldflipperPurePartySearcher
@@ -95,30 +97,41 @@ class MessageSync:
         import websockets
         self.ws = await websockets.connect(self.uri) if self.uri else None
 
-    async def check(self, bot: Bot, event: MessageEvent, card: MessageCard) -> bool:
+    async def check(self, bot: Bot, event: MessageEvent, card: MessageCard, retry: bool = False) -> bool:
         if self.failed_count >= self.failed_max:
             if time.time() < self.retry_time:
                 self.failed_count = 0
             return True
 
         try:
-            message_id = event.msgRandom if isinstance(event, RedMessageEvent) else event.message_id
-            user_id = event.get_user_id()
-            bot_id = bot.self_id
-
             if anise_config.config.sync_uri and not self.ws or self.ws.closed:
                 await self.connect()
 
-            data = {'message_id': message_id, 'user_id': user_id, 'bot_id': bot_id}
-            if isinstance(event, Onebot11GroupMessageEvent):
+            logger.info(event)
+            message_id = str(event.message_id) if isinstance(event, Onebot11MessageEvent) else event.msgRandom
+            user_id = event.get_user_id()
+            bot_id = bot.self_id
+
+
+            data = {'user_id': user_id, 'bot_id': bot_id, 'message_id': message_id}
+            print(message_id)
+            if isinstance(event, RedGroupMessageEvent):
+                data['group_id'] = int(event.peerUid)
+            elif isinstance(event, Onebot11GroupMessageEvent):
                 data['group_id'] = event.group_id
             data['card_hash'] = card.hash()
+            print(data)
             await self.ws.send(json.dumps(data))
-            msg: dict = json.loads(await self.ws.recv())
-            logger.debug(f'Received {msg}')
-            return msg.get('send', False)
+            # try to receive correct msg
+            for _ in range(10):
+                msg: dict = json.loads(await self.ws.recv())
+                if msg['package'].get('message_id') == message_id and msg['package'].get('bot_id') == bot_id:
+                    logger.debug(f'Received {msg}')
+                    return msg.get('send', False)
+        except ConnectionClosed as e:
+            if not retry:
+                return await self.check(bot, event, card, retry=True)
         except Exception as e:
-
             self.failed_count += 1
             self.retry_time = time.time() + self.retry_cooldown
             traceback.print_exception(e)
@@ -126,8 +139,7 @@ class MessageSync:
             return True
 
 
-msync = MessageSync()
-
+msync_list: dict[str, MessageSync] = dict()
 
 def package_checkers(
         *checkers: Callable[[MessageEvent], Awaitable[bool]],
@@ -194,11 +206,16 @@ async def do_query(bot: Bot, event: MessageEvent, query_manager: QueryManager):
     if not mc:
         mc = MessageCard()  # 空Card返回Failed的Message
         if isinstance(event, RedMessageEvent):
-            await bot.send(event, await mc.to_message_onebot11(start_time=t), reply_message=True)
-        else:
             await bot.send(event, await mc.to_message_red(event, start_time=t), reply_message=True)
+        else:
+            await bot.send(event, await mc.to_message_onebot11(start_time=t), reply_message=True)
         return
 
+    if bot.self_id not in msync_list:
+        msync = MessageSync()
+        msync_list[bot.self_id] = msync
+    else:
+        msync = msync_list[bot.self_id]
 
     if await msync.check(bot, event, mc):
         try:
@@ -241,29 +258,31 @@ async def _(bot: Bot, event: MessageEvent):
 
 from nonebot.adapters.onebot.v11 import permission as onebot_permission
 
-on_silent_open = on_message(
-    rule=_PrefixChecker(('静音',)),
-    permission=onebot_permission.GROUP_ADMIN | onebot_permission.GROUP_OWNER
-)
-on_silent_close = on_message(
-    rule=_PrefixChecker(('解除静音',)),
-    permission=onebot_permission.GROUP_ADMIN | onebot_permission.GROUP_OWNER
-)
+onebot_group_admin = onebot_permission.GROUP_ADMIN | onebot_permission.GROUP_OWNER
+on_silent_open = on_message(rule=_PrefixChecker(('静音',)))
+on_silent_close = on_message(rule=_PrefixChecker(('解除静音',)))
 
 
 @on_silent_open.handle()
-async def _(bot: Onebot11Bot, event: Onebot11GroupMessageEvent):
+async def _(bot: Bot, event: GroupMessageEvent):
     if event.to_me:
-        silent_list.add(event.group_id)
-        Path('temp_silent_list.json').write_text(json.dumps(list(silent_list)), encoding='utf-8')
+        if (
+            isinstance(event, Onebot11GroupMessageEvent) and
+            await onebot_group_admin(bot, event)
+        ) or (
+                isinstance(event, RedGroupMessageEvent) or
+                print(event.roleType)
+        ):
+            silent_list.add(int(event.peerUid) if isinstance(event, RedGroupMessageEvent) else event.group_id)
+            Path('temp_silent_list.json').write_text(json.dumps(list(silent_list)), encoding='utf-8')
 
         await bot.send(event, '已静音')
 
 
 @on_silent_close.handle()
-async def _(bot: Onebot11Bot, event: Onebot11GroupMessageEvent):
+async def _(bot: Bot, event: GroupMessageEvent):
     if event.to_me:
-        silent_list.remove(event.group_id)
+        silent_list.remove(int(event.peerUid) if isinstance(event, RedGroupMessageEvent) else event.group_id)
         Path('temp_silent_list.json').write_text(json.dumps(list(silent_list)), encoding='utf-8')
 
         await bot.send(event, f'已解除静音')
