@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 from typing import Optional, Callable
 
@@ -17,11 +18,11 @@ class AliasManager:
         self.alias2obj: CharTrie[str, GameObject] = CharTrie()
         # self.pyalias2obj: Trie[str, GameObject] = Trie(separator='-')
 
-    def init_from_toml(self, path: Path, obj_getter: Callable[[str], GameObject]):
+    def init_from_json(self, path: Path, obj_getter: Callable[[str], GameObject]):
         if not path.exists():
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(toml.dumps({}))
-        d: dict = toml.loads(path.read_text('utf-8'))
+            path.write_text(json.dumps({}))
+        d: dict = json.loads(path.read_text('utf-8'))
         for id_, names in d.items():
             for n in names:
                 if n in self.alias2obj:
@@ -33,8 +34,8 @@ class AliasManager:
                 self.add(n, obj_getter(id_))
 
     def init(self):
-        self.init_from_toml(RES_PATH / 'alias' / 'character.toml', lambda x: manager.get(Character, x))
-        self.init_from_toml(RES_PATH / 'alias' / 'equipment.toml', lambda x: manager.get(Equipment, x))
+        self.init_from_json(RES_PATH / 'worldflipper/alias' / 'character.json', lambda x: manager.get(Character, x))
+        self.init_from_json(RES_PATH / 'worldflipper/alias' / 'equipment.json', lambda x: manager.get(Equipment, x))
         for t in [Character, Equipment]:
             for id_, obj in manager.dict_of(t).items():
                 for name in obj.names:

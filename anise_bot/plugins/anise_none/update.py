@@ -65,8 +65,8 @@ class UpdateManager:
                 UpdateManager.UpdateEntry(self.query_config_url, RES_PATH / 'query' / 'config.json', 'Query Config'),
                 UpdateManager.UpdateEntry(urllib.parse.urljoin(self.url, '/bot/update/worldflipper/data/character'), DATA_PATH / 'worldflipper/object' / 'character.json', 'Character Data'),
                 UpdateManager.UpdateEntry(urllib.parse.urljoin(self.url, '/bot/update/worldflipper/data/equipment'), DATA_PATH / 'worldflipper/object' / 'equipment.json', 'Equipment Data'),
-                UpdateManager.UpdateEntry(urllib.parse.urljoin(self.url, '/bot/update/worldflipper/alias/character'), DATA_PATH / 'worldflipper/alias' / 'character.json', 'Character Alias'),
-                UpdateManager.UpdateEntry(urllib.parse.urljoin(self.url, '/bot/update/worldflipper/alias/equipment'), DATA_PATH / 'worldflipper/alias' / 'equipment.json', 'Equipment Alias'),
+                UpdateManager.UpdateEntry(urllib.parse.urljoin(self.url, '/bot/update/worldflipper/alias/character'), RES_PATH / 'worldflipper/alias' / 'character.json', 'Character Alias'),
+                UpdateManager.UpdateEntry(urllib.parse.urljoin(self.url, '/bot/update/worldflipper/alias/equipment'), RES_PATH / 'worldflipper/alias' / 'equipment.json', 'Equipment Alias'),
             ]
             for update_ in updates:
                 logger.info(f'从{update_.url}获取{update_.log_name}...')

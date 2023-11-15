@@ -418,6 +418,7 @@ class QueryManager:
 
     async def query(self, text: str) -> Optional[MessageCard]:
         try:
+            text = text.strip()
             for handler in self.query_handlers:
                 if check_result := await handler.check(text):
                     mc = await handler.get_message(check_result)

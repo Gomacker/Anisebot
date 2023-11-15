@@ -1,15 +1,16 @@
+import asyncio
 import dataclasses
-import hashlib
 import json
+import threading
 import time
 import traceback
 from collections import deque
 from pathlib import Path
+from queue import Queue
 from typing import Awaitable, Callable, Optional, Union
 
 from nonebot import on_message, on_fullmatch, logger, Bot
 from nonebot.adapters.onebot.v11 import (
-    Bot as Onebot11Bot,
     MessageEvent as Onebot11MessageEvent,
     GroupMessageEvent as Onebot11GroupMessageEvent,
     MessageSegment as Onebot11MessageSegment
@@ -24,9 +25,9 @@ from websockets.exceptions import ConnectionClosed
 from websockets.legacy.client import WebSocketClientProtocol
 
 from .query import get_query, QueryManager, QueryHandlerWorldflipperPurePartySearcher
-from ...utils import MessageCard
 from ... import config
 from ...anise import config as anise_config
+from ...utils import MessageCard
 
 MessageEvent = Union[Onebot11MessageEvent, RedMessageEvent]
 GroupMessageEvent = Union[Onebot11GroupMessageEvent, RedGroupMessageEvent]
@@ -76,6 +77,12 @@ async def whitelist_checker(event: MessageEvent) -> bool:
     return True
 
 
+@dataclasses.dataclass
+class CheckPackage:
+    bot: Bot
+    event: MessageEvent
+    card: MessageCard
+
 class MessageSync:
     """
     同步分布式Bot的消息，去掉不必要的重复回复
@@ -121,6 +128,7 @@ class MessageSync:
                 data['group_id'] = event.group_id
             data['card_hash'] = card.hash()
             print(data)
+            print(self.ws)
             await self.ws.send(json.dumps(data))
             # try to receive correct msg
             for _ in range(10):
@@ -139,7 +147,33 @@ class MessageSync:
             return True
 
 
-msync_list: dict[str, MessageSync] = dict()
+class CheckerThread(threading.Thread):
+    def __init__(self):
+        super().__init__()
+        self.sync = MessageSync()
+        self.check_queue: Queue[CheckPackage] = Queue()
+        self.output_queue: Queue[bool] = Queue()
+        self.start()
+
+    def run(self):
+        while True:
+            time.sleep(1)
+            if not self.check_queue.empty():
+                package: CheckPackage = self.check_queue.get()
+                is_ok: bool = asyncio.run(self.sync.check(package.bot, package.event, package.card))
+                self.output_queue.put(is_ok)
+
+    async def check(self, bot: Bot, event: MessageEvent, card: MessageCard) -> bool:
+        self.check_queue.put(CheckPackage(bot, event, card))
+        # async wait for check queue is not empty
+        while self.output_queue.empty():
+            print(f'{bot} is waiting {event.msgRandom}')
+            await asyncio.sleep(1)
+        return self.output_queue.get()
+
+
+
+msync_list: dict[str, CheckerThread] = dict()
 
 def package_checkers(
         *checkers: Callable[[MessageEvent], Awaitable[bool]],
@@ -211,13 +245,14 @@ async def do_query(bot: Bot, event: MessageEvent, query_manager: QueryManager):
             await bot.send(event, await mc.to_message_onebot11(start_time=t), reply_message=True)
         return
 
-    if bot.self_id not in msync_list:
-        msync = MessageSync()
-        msync_list[bot.self_id] = msync
-    else:
-        msync = msync_list[bot.self_id]
+    # if bot.self_id not in msync_list:
+    #     check_thread = CheckerThread()
+    #     msync_list[bot.self_id] = check_thread
+    # else:
+    #     check_thread = msync_list[bot.self_id]
 
-    if await msync.check(bot, event, mc):
+    # if await check_thread.check(bot, event, mc):
+    if True:
         try:
             if isinstance(event, RedMessageEvent):
                 msg = await mc.to_message_red(event, start_time=t)
@@ -266,15 +301,8 @@ on_silent_close = on_message(rule=_PrefixChecker(('解除静音',)))
 @on_silent_open.handle()
 async def _(bot: Bot, event: GroupMessageEvent):
     if event.to_me:
-        if (
-            isinstance(event, Onebot11GroupMessageEvent) and
-            await onebot_group_admin(bot, event)
-        ) or (
-                isinstance(event, RedGroupMessageEvent) or
-                print(event.roleType)
-        ):
-            silent_list.add(int(event.peerUid) if isinstance(event, RedGroupMessageEvent) else event.group_id)
-            Path('temp_silent_list.json').write_text(json.dumps(list(silent_list)), encoding='utf-8')
+        silent_list.add(int(event.peerUid) if isinstance(event, RedGroupMessageEvent) else event.group_id)
+        Path('temp_silent_list.json').write_text(json.dumps(list(silent_list)), encoding='utf-8')
 
         await bot.send(event, '已静音')
 
